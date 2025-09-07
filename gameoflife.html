@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Game of Life + Draw</title>
+  <title>Game of Life + Draw + Erase</title>
   <style>
     html, body {
       margin: 0;
@@ -51,13 +51,11 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// Fullscreen canvas
 let width = window.innerWidth;
 let height = window.innerHeight;
 canvas.width = width;
 canvas.height = height;
 
-// Settings
 const CELL_SIZE = 10;
 const COLS = Math.floor(width / CELL_SIZE);
 const ROWS = Math.floor(height / CELL_SIZE);
@@ -123,27 +121,35 @@ document.getElementById('clearBtn').addEventListener('click', () => {
   drawGrid();
 });
 
-// 🖱️ Drawing with mouse hold
+// 🖱️ Drawing with left/right mouse
 let isDrawing = false;
+let drawMode = 1; // 1 for draw, 0 for erase
 
 canvas.addEventListener('mousedown', (e) => {
+  e.preventDefault();
   isDrawing = true;
+  drawMode = e.button === 2 ? 0 : 1; // Right click = erase
   toggleCellFromMouse(e);
 });
 
 canvas.addEventListener('mousemove', (e) => {
-  if (isDrawing) toggleCellFromMouse(e);
+  if (isDrawing) {
+    toggleCellFromMouse(e);
+  }
 });
 
 canvas.addEventListener('mouseup', () => isDrawing = false);
 canvas.addEventListener('mouseleave', () => isDrawing = false);
+
+// Disable right-click menu
+canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
 function toggleCellFromMouse(e) {
   const rect = canvas.getBoundingClientRect();
   const x = Math.floor((e.clientX - rect.left) / CELL_SIZE);
   const y = Math.floor((e.clientY - rect.top) / CELL_SIZE);
   if (x >= 0 && x < COLS && y >= 0 && y < ROWS) {
-    grid[y][x] = 1;
+    grid[y][x] = drawMode;
     drawGrid();
   }
 }
