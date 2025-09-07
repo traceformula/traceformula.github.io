@@ -77,17 +77,39 @@
       <input type="range" id="brushSize" min="1" max="10" value="1" />
     </label>
     <label>
-      Brush Type:
-      <select id="brushType">
-        <option value="dot">Dot</option>
-        <option value="square">Square</option>
-        <option value="glider">Glider</option>
-        <option value="blinker">Blinker</option>
-        <option value="phantom">Phantom</option>
-      </select>
-    </label>
+    Brush Type:
+    <select id="brushType">
+      <option value="dot">Dot</option>
+      <option value="square">Square</option>
+      <option value="glider">Glider</option>
+      <option value="blinker">Blinker</option>
+      <option value="phantom">Phantom</option>
+      <option value="custom">Custom</option>
+    </select>
+  </label>
+
+  <label>
+    Rotation:
+    <select id="rotation">
+      <option value="0">0°</option>
+      <option value="90">90°</option>
+      <option value="180">180°</option>
+      <option value="270">270°</option>
+    </select>
+  </label>
+
+  <button id="editCustomBrushBtn">Edit Custom Brush</button>
+
   </div>
 </div>
+
+<div id="customBrushModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#222; padding:20px; border:2px solid #555; z-index:20; color:white; text-align:center;">
+  <h3>Edit Custom Brush</h3>
+  <canvas id="brushCanvas" width="100" height="100" style="background:#000; margin-bottom:10px;"></canvas><br>
+  <button id="saveBrushBtn">Save</button>
+  <button id="closeBrushBtn">Cancel</button>
+</div>
+
 
 <canvas id="gameCanvas"></canvas>
 
@@ -110,6 +132,8 @@
   let brushSize = 1;
 
   let brushType = 'dot';
+  let brushRotation = 0;
+  let customBrush = [[0, 0]];
 
   const brushes = {
     dot: [[0, 0]],
@@ -126,8 +150,18 @@
     ],
     phantom: [
       [-1, -2], [-1, 2], [0, -1], [0, 1], [1, -1], [1, 1], [2, 0]
-    ]
+    ],
+    custom: customBrush
   };
+
+  function rotatePattern(pattern, angle) {
+    const rad = (angle * Math.PI) / 180;
+    return pattern.map(([x, y]) => {
+      const nx = Math.round(x * Math.cos(rad) - y * Math.sin(rad));
+      const ny = Math.round(x * Math.sin(rad) + y * Math.cos(rad));
+      return [nx, ny];
+    });
+  }
 
   function createEmptyGrid() {
     return Array.from({ length: ROWS }, () => Array(COLS).fill(0));
@@ -211,32 +245,36 @@
     const cx = Math.floor((e.clientX - rect.left) / CELL_SIZE);
     const cy = Math.floor((e.clientY - rect.top) / CELL_SIZE);
 
-    // Use custom brush if 'dot' or 'brushSize' > 1
-    if (brushType === 'dot' && brushSize === 1) {
-      grid[cy][cx] = drawMode;
-    } else if (brushType === 'dot') {
-      const half = Math.floor(brushSize / 2);
-      for (let dy = -half; dy <= half; dy++) {
-        for (let dx = -half; dx <= half; dx++) {
-          const x = cx + dx;
-          const y = cy + dy;
-          if (x >= 0 && x < COLS && y >= 0 && y < ROWS) {
-            grid[y][x] = drawMode;
-          }
-        }
-      }
-    } else {
-      const pattern = brushes[brushType];
-      for (const [dx, dy] of pattern) {
-        const x = cx + dx;
-        const y = cy + dy;
-        if (x >= 0 && x < COLS && y >= 0 && y < ROWS) {
-          grid[y][x] = drawMode;
-        }
+    let pattern = brushType === 'dot' && brushSize > 1
+      ? generateDotBrush(brushSize)
+      : brushType === 'dot'
+      ? [[0, 0]]
+      : brushType === 'custom'
+      ? customBrush
+      : brushes[brushType];
+
+    const rotated = rotatePattern(pattern, brushRotation);
+
+    for (const [dx, dy] of rotated) {
+      const x = cx + dx;
+      const y = cy + dy;
+      if (x >= 0 && x < COLS && y >= 0 && y < ROWS) {
+        grid[y][x] = drawMode;
       }
     }
 
     drawGrid();
+  }
+
+  function generateDotBrush(size) {
+    const half = Math.floor(size / 2);
+    const result = [];
+    for (let dy = -half; dy <= half; dy++) {
+      for (let dx = -half; dx <= half; dx++) {
+        result.push([dx, dy]);
+      }
+    }
+    return result;
   }
 
   document.getElementById('imageInput').addEventListener('change', (e) => {
@@ -273,6 +311,59 @@
     brushType = e.target.value;
   });
 
+  document.getElementById('rotation').addEventListener('change', (e) => {
+    brushRotation = parseInt(e.target.value);
+  });
+
+  const brushCanvas = document.getElementById('brushCanvas');
+  const brushCtx = brushCanvas.getContext('2d');
+  const modal = document.getElementById('customBrushModal');
+  let brushGrid = Array.from({ length: 10 }, () => Array(10).fill(0));
+
+  function drawBrushEditor() {
+    brushCtx.clearRect(0, 0, 100, 100);
+    for (let y = 0; y < 10; y++) {
+      for (let x = 0; x < 10; x++) {
+        if (brushGrid[y][x]) {
+          brushCtx.fillStyle = '#0f0';
+          brushCtx.fillRect(x * 10, y * 10, 10, 10);
+        }
+        brushCtx.strokeStyle = '#555';
+        brushCtx.strokeRect(x * 10, y * 10, 10, 10);
+      }
+    }
+  }
+
+  brushCanvas.addEventListener('click', (e) => {
+    const rect = brushCanvas.getBoundingClientRect();
+    const x = Math.floor((e.clientX - rect.left) / 10);
+    const y = Math.floor((e.clientY - rect.top) / 10);
+    brushGrid[y][x] = brushGrid[y][x] ? 0 : 1;
+    drawBrushEditor();
+  });
+
+  document.getElementById('editCustomBrushBtn').addEventListener('click', () => {
+    modal.style.display = 'block';
+    drawBrushEditor();
+  });
+
+  document.getElementById('closeBrushBtn').addEventListener('click', () => {
+    modal.style.display = 'none';
+  });
+
+  document.getElementById('saveBrushBtn').addEventListener('click', () => {
+    const pattern = [];
+    for (let y = 0; y < 10; y++) {
+      for (let x = 0; x < 10; x++) {
+        if (brushGrid[y][x]) {
+          pattern.push([x - 5, y - 5]); // Center at (0, 0)
+        }
+      }
+    }
+    customBrush = pattern;
+    brushes.custom = customBrush;
+    modal.style.display = 'none';
+  });
 
   // Control panel minimize/expand
   const controls = document.getElementById('controls');
