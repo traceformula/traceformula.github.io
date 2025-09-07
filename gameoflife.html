@@ -76,15 +76,6 @@
       Brush Size:
       <input type="range" id="brushSize" min="1" max="10" value="1" />
     </label>
-    <label>
-      Brush Type:
-      <select id="brushType">
-        <option value="dot">Dot</option>
-        <option value="square">Square</option>
-        <option value="glider">Glider</option>
-        <option value="blinker">Blinker</option>
-      </select>
-    </label>
   </div>
 </div>
 
@@ -107,23 +98,6 @@
   let running = false;
   let interval = null;
   let brushSize = 1;
-
-  let brushType = 'dot';
-
-  const brushes = {
-    dot: [[0, 0]],
-    square: [
-      [-1, -1], [0, -1], [1, -1],
-      [-1,  0], [0,  0], [1,  0],
-      [-1,  1], [0,  1], [1,  1]
-    ],
-    glider: [
-      [0, -1], [1, 0], [-1, 1], [0, 1], [1, 1]
-    ],
-    blinker: [
-      [-1, 0], [0, 0], [1, 0]
-    ]
-  };
 
   function createEmptyGrid() {
     return Array.from({ length: ROWS }, () => Array(COLS).fill(0));
@@ -206,24 +180,11 @@
     const rect = canvas.getBoundingClientRect();
     const cx = Math.floor((e.clientX - rect.left) / CELL_SIZE);
     const cy = Math.floor((e.clientY - rect.top) / CELL_SIZE);
-  
-    // Use custom brush if 'dot' or 'brushSize' > 1
-    if (brushType === 'dot' && brushSize === 1) {
-      grid[cy]?.[cx] = drawMode;
-    } else if (brushType === 'dot') {
-      const half = Math.floor(brushSize / 2);
-      for (let dy = -half; dy <= half; dy++) {
-        for (let dx = -half; dx <= half; dx++) {
-          const x = cx + dx;
-          const y = cy + dy;
-          if (x >= 0 && x < COLS && y >= 0 && y < ROWS) {
-            grid[y][x] = drawMode;
-          }
-        }
-      }
-    } else {
-      const pattern = brushes[brushType];
-      for (const [dx, dy] of pattern) {
+
+    const half = Math.floor(brushSize / 2);
+
+    for (let dy = -half; dy <= half; dy++) {
+      for (let dx = -half; dx <= half; dx++) {
         const x = cx + dx;
         const y = cy + dy;
         if (x >= 0 && x < COLS && y >= 0 && y < ROWS) {
@@ -231,10 +192,9 @@
         }
       }
     }
-  
+
     drawGrid();
   }
-
 
   document.getElementById('imageInput').addEventListener('change', (e) => {
     const file = e.target.files[0];
@@ -264,10 +224,6 @@
 
   document.getElementById('brushSize').addEventListener('input', (e) => {
     brushSize = parseInt(e.target.value);
-  });
-
-  document.getElementById('brushType').addEventListener('change', (e) => {
-    brushType = e.target.value;
   });
 
   // Control panel minimize/expand
