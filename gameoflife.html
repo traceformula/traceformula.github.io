@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Game of Life + Draw + Erase</title>
+  <title>Game of Life + Draw + Erase + Brush Size</title>
   <style>
     html, body {
       margin: 0;
@@ -28,9 +28,11 @@
       flex-direction: column;
       gap: 6px;
     }
-    button, input[type="file"] {
+    button, input[type="file"], input[type="range"] {
       font-size: 14px;
-      padding: 4px 8px;
+    }
+    label {
+      font-size: 13px;
     }
   </style>
 </head>
@@ -42,6 +44,10 @@
   <label>
     Upload Image:
     <input type="file" id="imageInput" accept="image/*">
+  </label>
+  <label>
+    Brush Size:
+    <input type="range" id="brushSize" min="1" max="10" value="1">
   </label>
 </div>
 
@@ -63,6 +69,7 @@ const ROWS = Math.floor(height / CELL_SIZE);
 let grid = createEmptyGrid();
 let running = false;
 let interval = null;
+let brushSize = 1;
 
 function createEmptyGrid() {
   return Array.from({ length: ROWS }, () => Array(COLS).fill(0));
@@ -121,37 +128,45 @@ document.getElementById('clearBtn').addEventListener('click', () => {
   drawGrid();
 });
 
-// 🖱️ Drawing with left/right mouse
+// 🖱️ Drawing with left/right mouse + brush size
 let isDrawing = false;
-let drawMode = 1; // 1 for draw, 0 for erase
+let drawMode = 1;
 
 canvas.addEventListener('mousedown', (e) => {
   e.preventDefault();
   isDrawing = true;
-  drawMode = e.button === 2 ? 0 : 1; // Right click = erase
-  toggleCellFromMouse(e);
+  drawMode = e.button === 2 ? 0 : 1;
+  applyBrushFromMouse(e);
 });
 
 canvas.addEventListener('mousemove', (e) => {
   if (isDrawing) {
-    toggleCellFromMouse(e);
+    applyBrushFromMouse(e);
   }
 });
 
 canvas.addEventListener('mouseup', () => isDrawing = false);
 canvas.addEventListener('mouseleave', () => isDrawing = false);
-
-// Disable right-click menu
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
-function toggleCellFromMouse(e) {
+function applyBrushFromMouse(e) {
   const rect = canvas.getBoundingClientRect();
-  const x = Math.floor((e.clientX - rect.left) / CELL_SIZE);
-  const y = Math.floor((e.clientY - rect.top) / CELL_SIZE);
-  if (x >= 0 && x < COLS && y >= 0 && y < ROWS) {
-    grid[y][x] = drawMode;
-    drawGrid();
+  const cx = Math.floor((e.clientX - rect.left) / CELL_SIZE);
+  const cy = Math.floor((e.clientY - rect.top) / CELL_SIZE);
+
+  const half = Math.floor(brushSize / 2);
+
+  for (let dy = -half; dy <= half; dy++) {
+    for (let dx = -half; dx <= half; dx++) {
+      const x = cx + dx;
+      const y = cy + dy;
+      if (x >= 0 && x < COLS && y >= 0 && y < ROWS) {
+        grid[y][x] = drawMode;
+      }
+    }
   }
+
+  drawGrid();
 }
 
 // 📷 Image upload
@@ -178,6 +193,11 @@ document.getElementById('imageInput').addEventListener('change', (e) => {
     }
     drawGrid();
   };
+});
+
+// 🎛️ Brush size slider
+document.getElementById('brushSize').addEventListener('input', (e) => {
+  brushSize = parseInt(e.target.value);
 });
 
 drawGrid();
