@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Game of Life + Draw + Erase + Brush Size</title>
+  <meta charset="UTF-8" />
+  <title>Game of Life + Controls Panel Minimize</title>
   <style>
     html, body {
       margin: 0;
@@ -10,6 +10,7 @@
       overflow: hidden;
       font-family: sans-serif;
       color: white;
+      height: 100%;
     }
     canvas {
       display: block;
@@ -24,6 +25,27 @@
       background: rgba(0, 0, 0, 0.7);
       padding: 8px 12px;
       border-radius: 6px;
+      width: 200px;
+      user-select: none;
+      transition: height 0.3s ease;
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+    #controls.minimized {
+      height: 30px; /* just the header */
+      padding: 6px 12px;
+    }
+    #controlsHeader {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 16px;
+      margin-bottom: 8px;
+      user-select: none;
+    }
+    #controlsContent {
       display: flex;
       flex-direction: column;
       gap: 6px;
@@ -39,168 +61,201 @@
 <body>
 
 <div id="controls">
-  <button id="startStopBtn">Start</button>
-  <button id="clearBtn">Clear</button>
-  <label>
-    Upload Image:
-    <input type="file" id="imageInput" accept="image/*">
-  </label>
-  <label>
-    Brush Size:
-    <input type="range" id="brushSize" min="1" max="10" value="1">
-  </label>
+  <div id="controlsHeader">
+    Controls
+    <button id="toggleBtn" title="Minimize/Expand" aria-label="Toggle Controls">▲</button>
+  </div>
+  <div id="controlsContent">
+    <button id="startStopBtn">Start</button>
+    <button id="clearBtn">Clear</button>
+    <label>
+      Upload Image:
+      <input type="file" id="imageInput" accept="image/*" />
+    </label>
+    <label>
+      Brush Size:
+      <input type="range" id="brushSize" min="1" max="10" value="1" />
+    </label>
+  </div>
 </div>
 
 <canvas id="gameCanvas"></canvas>
 
 <script>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
 
-let width = window.innerWidth;
-let height = window.innerHeight;
-canvas.width = width;
-canvas.height = height;
+  let width = window.innerWidth;
+  let height = window.innerHeight;
+  canvas.width = width;
+  canvas.height = height;
 
-const CELL_SIZE = 10;
-const COLS = Math.floor(width / CELL_SIZE);
-const ROWS = Math.floor(height / CELL_SIZE);
+  const CELL_SIZE = 10;
+  const COLS = Math.floor(width / CELL_SIZE);
+  const ROWS = Math.floor(height / CELL_SIZE);
 
-let grid = createEmptyGrid();
-let running = false;
-let interval = null;
-let brushSize = 1;
+  let grid = createEmptyGrid();
+  let running = false;
+  let interval = null;
+  let brushSize = 1;
 
-function createEmptyGrid() {
-  return Array.from({ length: ROWS }, () => Array(COLS).fill(0));
-}
-
-function drawGrid() {
-  ctx.clearRect(0, 0, width, height);
-  ctx.fillStyle = '#00ff88';
-  for (let y = 0; y < ROWS; y++) {
-    for (let x = 0; x < COLS; x++) {
-      if (grid[y][x] === 1) {
-        ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-      }
-    }
-  }
-}
-
-function countNeighbors(grid, x, y) {
-  let count = 0;
-  for (let dy = -1; dy <= 1; dy++) {
-    for (let dx = -1; dx <= 1; dx++) {
-      if (dx === 0 && dy === 0) continue;
-      const nx = x + dx;
-      const ny = y + dy;
-      if (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS) {
-        count += grid[ny][nx];
-      }
-    }
-  }
-  return count;
-}
-
-function update() {
-  const next = createEmptyGrid();
-  for (let y = 0; y < ROWS; y++) {
-    for (let x = 0; x < COLS; x++) {
-      const neighbors = countNeighbors(grid, x, y);
-      const alive = grid[y][x] === 1;
-      if (alive && (neighbors === 2 || neighbors === 3)) next[y][x] = 1;
-      else if (!alive && neighbors === 3) next[y][x] = 1;
-    }
-  }
-  grid = next;
-  drawGrid();
-}
-
-document.getElementById('startStopBtn').addEventListener('click', () => {
-  running = !running;
-  document.getElementById('startStopBtn').textContent = running ? 'Pause' : 'Start';
-  if (running) interval = setInterval(update, 100);
-  else clearInterval(interval);
-});
-
-document.getElementById('clearBtn').addEventListener('click', () => {
-  grid = createEmptyGrid();
-  drawGrid();
-});
-
-// 🖱️ Drawing with left/right mouse + brush size
-let isDrawing = false;
-let drawMode = 1;
-
-canvas.addEventListener('mousedown', (e) => {
-  e.preventDefault();
-  isDrawing = true;
-  drawMode = e.button === 2 ? 0 : 1;
-  applyBrushFromMouse(e);
-});
-
-canvas.addEventListener('mousemove', (e) => {
-  if (isDrawing) {
-    applyBrushFromMouse(e);
-  }
-});
-
-canvas.addEventListener('mouseup', () => isDrawing = false);
-canvas.addEventListener('mouseleave', () => isDrawing = false);
-canvas.addEventListener('contextmenu', (e) => e.preventDefault());
-
-function applyBrushFromMouse(e) {
-  const rect = canvas.getBoundingClientRect();
-  const cx = Math.floor((e.clientX - rect.left) / CELL_SIZE);
-  const cy = Math.floor((e.clientY - rect.top) / CELL_SIZE);
-
-  const half = Math.floor(brushSize / 2);
-
-  for (let dy = -half; dy <= half; dy++) {
-    for (let dx = -half; dx <= half; dx++) {
-      const x = cx + dx;
-      const y = cy + dy;
-      if (x >= 0 && x < COLS && y >= 0 && y < ROWS) {
-        grid[y][x] = drawMode;
-      }
-    }
+  function createEmptyGrid() {
+    return Array.from({ length: ROWS }, () => Array(COLS).fill(0));
   }
 
-  drawGrid();
-}
-
-// 📷 Image upload
-document.getElementById('imageInput').addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const img = new Image();
-  const reader = new FileReader();
-  reader.onload = (event) => img.src = event.target.result;
-  reader.readAsDataURL(file);
-  img.onload = () => {
-    const tempCanvas = document.createElement('canvas');
-    const tempCtx = tempCanvas.getContext('2d');
-    tempCanvas.width = COLS;
-    tempCanvas.height = ROWS;
-    tempCtx.drawImage(img, 0, 0, COLS, ROWS);
-    const imageData = tempCtx.getImageData(0, 0, COLS, ROWS).data;
+  function drawGrid() {
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = '#00ff88';
     for (let y = 0; y < ROWS; y++) {
       for (let x = 0; x < COLS; x++) {
-        const i = (y * COLS + x) * 4;
-        const brightness = (imageData[i] + imageData[i+1] + imageData[i+2]) / 3;
-        grid[y][x] = brightness < 128 ? 1 : 0;
+        if (grid[y][x] === 1) {
+          ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+        }
       }
     }
+  }
+
+  function countNeighbors(grid, x, y) {
+    let count = 0;
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        if (dx === 0 && dy === 0) continue;
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS) {
+          count += grid[ny][nx];
+        }
+      }
+    }
+    return count;
+  }
+
+  function update() {
+    const next = createEmptyGrid();
+    for (let y = 0; y < ROWS; y++) {
+      for (let x = 0; x < COLS; x++) {
+        const neighbors = countNeighbors(grid, x, y);
+        const alive = grid[y][x] === 1;
+        if (alive && (neighbors === 2 || neighbors === 3)) next[y][x] = 1;
+        else if (!alive && neighbors === 3) next[y][x] = 1;
+      }
+    }
+    grid = next;
     drawGrid();
-  };
-});
+  }
 
-// 🎛️ Brush size slider
-document.getElementById('brushSize').addEventListener('input', (e) => {
-  brushSize = parseInt(e.target.value);
-});
+  document.getElementById('startStopBtn').addEventListener('click', () => {
+    running = !running;
+    document.getElementById('startStopBtn').textContent = running ? 'Pause' : 'Start';
+    if (running) interval = setInterval(update, 100);
+    else clearInterval(interval);
+  });
 
-drawGrid();
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    grid = createEmptyGrid();
+    drawGrid();
+  });
+
+  let isDrawing = false;
+  let drawMode = 1;
+
+  canvas.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    isDrawing = true;
+    drawMode = e.button === 2 ? 0 : 1;
+    applyBrushFromMouse(e);
+  });
+
+  canvas.addEventListener('mousemove', (e) => {
+    if (isDrawing) {
+      applyBrushFromMouse(e);
+    }
+  });
+
+  canvas.addEventListener('mouseup', () => (isDrawing = false));
+  canvas.addEventListener('mouseleave', () => (isDrawing = false));
+  canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+  function applyBrushFromMouse(e) {
+    const rect = canvas.getBoundingClientRect();
+    const cx = Math.floor((e.clientX - rect.left) / CELL_SIZE);
+    const cy = Math.floor((e.clientY - rect.top) / CELL_SIZE);
+
+    const half = Math.floor(brushSize / 2);
+
+    for (let dy = -half; dy <= half; dy++) {
+      for (let dx = -half; dx <= half; dx++) {
+        const x = cx + dx;
+        const y = cy + dy;
+        if (x >= 0 && x < COLS && y >= 0 && y < ROWS) {
+          grid[y][x] = drawMode;
+        }
+      }
+    }
+
+    drawGrid();
+  }
+
+  document.getElementById('imageInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = (event) => (img.src = event.target.result);
+    reader.readAsDataURL(file);
+    img.onload = () => {
+      const tempCanvas = document.createElement('canvas');
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCanvas.width = COLS;
+      tempCanvas.height = ROWS;
+      tempCtx.drawImage(img, 0, 0, COLS, ROWS);
+      const imageData = tempCtx.getImageData(0, 0, COLS, ROWS).data;
+      for (let y = 0; y < ROWS; y++) {
+        for (let x = 0; x < COLS; x++) {
+          const i = (y * COLS + x) * 4;
+          const brightness =
+            (imageData[i] + imageData[i + 1] + imageData[i + 2]) / 3;
+          grid[y][x] = brightness < 128 ? 1 : 0;
+        }
+      }
+      drawGrid();
+    };
+  });
+
+  document.getElementById('brushSize').addEventListener('input', (e) => {
+    brushSize = parseInt(e.target.value);
+  });
+
+  // Control panel minimize/expand
+  const controls = document.getElementById('controls');
+  const toggleBtn = document.getElementById('toggleBtn');
+  const controlsContent = document.getElementById('controlsContent');
+
+  let minimized = false;
+
+  toggleBtn.addEventListener('click', () => {
+    minimized = !minimized;
+    if (minimized) {
+      controls.classList.add('minimized');
+      controlsContent.style.display = 'none';
+      toggleBtn.textContent = '▼';
+    } else {
+      controls.classList.remove('minimized');
+      controlsContent.style.display = 'flex';
+      toggleBtn.textContent = '▲';
+    }
+  });
+
+  drawGrid();
+
+  // Optional: handle window resize
+  window.addEventListener('resize', () => {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+    drawGrid();
+  });
 </script>
 
 </body>
