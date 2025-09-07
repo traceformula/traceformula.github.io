@@ -110,6 +110,13 @@
   <button id="closeBrushBtn">Cancel</button>
 </div>
 
+<div id="brushLibraryModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#222; padding:20px; border:2px solid #555; z-index:20; color:white; text-align:left; width:300px;">
+  <h3>Brush Library</h3>
+  <div id="libraryList" style="max-height:200px; overflow-y:auto; margin-bottom:10px;"></div>
+  <button id="closeLibraryBtn">Close</button>
+</div>
+
+<button id="openLibraryBtn" style="position:fixed; bottom:10px; left:10px; z-index:10;">🧱 Brush Library</button>
 
 <canvas id="gameCanvas"></canvas>
 
@@ -360,9 +367,55 @@
         }
       }
     }
+    const name = prompt("Name your custom brush:");
+    if (name) {
+      const savedBrushes = JSON.parse(localStorage.getItem('brushLibrary') || '{}');
+      savedBrushes[name] = pattern;
+      localStorage.setItem('brushLibrary', JSON.stringify(savedBrushes));
+      alert(`Saved "${name}" to your library.`);
+    }
     customBrush = pattern;
     brushes.custom = customBrush;
     modal.style.display = 'none';
+  });
+
+  const libraryModal = document.getElementById('brushLibraryModal');
+  const openLibraryBtn = document.getElementById('openLibraryBtn');
+  const closeLibraryBtn = document.getElementById('closeLibraryBtn');
+  const libraryList = document.getElementById('libraryList');
+
+  openLibraryBtn.addEventListener('click', () => {
+    const saved = JSON.parse(localStorage.getItem('brushLibrary') || '{}');
+    libraryList.innerHTML = '';
+
+    Object.entries(saved).forEach(([name, pattern]) => {
+      const row = document.createElement('div');
+      row.style.marginBottom = '6px';
+
+      const btn = document.createElement('button');
+      btn.textContent = 'Use';
+      btn.style.marginRight = '10px';
+      btn.onclick = () => {
+        customBrush = pattern;
+        brushes.custom = customBrush;
+        brushType = 'custom';
+        document.getElementById('brushType').value = 'custom';
+        libraryModal.style.display = 'none';
+      };
+
+      const label = document.createElement('span');
+      label.textContent = name;
+
+      row.appendChild(btn);
+      row.appendChild(label);
+      libraryList.appendChild(row);
+    });
+
+    libraryModal.style.display = 'block';
+  });
+
+  closeLibraryBtn.addEventListener('click', () => {
+    libraryModal.style.display = 'none';
   });
 
   // Control panel minimize/expand
