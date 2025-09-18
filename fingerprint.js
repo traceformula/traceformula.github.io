@@ -5,17 +5,14 @@ export async function getAudioFingerprint() {
     try {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       const ctx = new AudioContext();
-
       const oscillator = ctx.createOscillator();
       const analyser = ctx.createAnalyser();
       const gain = ctx.createGain();
       const scriptProcessor = ctx.createScriptProcessor(4096, 1, 1);
 
-      // More stable frequency
       oscillator.type = 'sine';
-      oscillator.frequency.value = 440; // A4 pitch, stable waveform
-
-      gain.gain.value = 0; // Still silent
+      oscillator.frequency.value = 440;
+      gain.gain.value = 0; // Silent
 
       oscillator.connect(analyser);
       analyser.connect(gain);
@@ -24,34 +21,21 @@ export async function getAudioFingerprint() {
 
       oscillator.start(0);
 
-      scriptProcessor.onaudioprocess = function (event) {
+      scriptProcessor.onaudioprocess = async function (event) {
         const buffer = event.inputBuffer.getChannelData(0);
-        
-        // Debug: Check if buffer has data
-        //const max = Math.max(...buffer);
-        //const min = Math.min(...buffer);
-        let max = -Infinity, min = Infinity;
-        for (let i = 0; i < buffer.length; i++) {
-          const v = buffer[i];
-          if (v > max) max = v;
-          if (v < min) min = v;
-        }
-        console.log("Audio buffer range:", { min, max });
 
-        // Ensure buffer has signal variation
-        if (Math.abs(max - min) < 1e-5) {
-          console.warn("Buffer is flat or too quiet");
-          resolve("0");
-          return;
-        }
+        // Convert buffer to string (keep 1 decimal precision)
+        const fingerprintStr = Array.from(buffer)
+          .slice(0, 512) // don't hash full buffer; 512 is enough
+          .map(v => v.toFixed(3))
+          .join(',');
 
-        // Hash the buffer
-        let hash = 0;
-        for (let i = 0; i < buffer.length; i++) {
-          const val = Math.floor(buffer[i] * 1000);
-          hash = ((hash << 5) - hash) + val;
-          hash |= 0;
-        }
+        // Encode and hash using SHA-256
+        const encoder = new TextEncoder();
+        const data = encoder.encode(fingerprintStr);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
         // Cleanup
         oscillator.stop();
@@ -61,7 +45,7 @@ export async function getAudioFingerprint() {
         scriptProcessor.disconnect();
         ctx.close();
 
-        resolve(hash.toString());
+        resolve(hashHex);
       };
     } catch (err) {
       reject(err);
