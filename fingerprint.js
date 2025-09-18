@@ -5,14 +5,17 @@ export async function getAudioFingerprint() {
     try {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       const ctx = new AudioContext();
+
       const oscillator = ctx.createOscillator();
       const analyser = ctx.createAnalyser();
       const gain = ctx.createGain();
       const scriptProcessor = ctx.createScriptProcessor(4096, 1, 1);
 
-      oscillator.type = 'triangle';
-      oscillator.frequency.value = 10000;
-      gain.gain.value = 0;
+      // More stable frequency
+      oscillator.type = 'sine';
+      oscillator.frequency.value = 440; // A4 pitch, stable waveform
+
+      gain.gain.value = 0; // Still silent
 
       oscillator.connect(analyser);
       analyser.connect(gain);
@@ -23,13 +26,28 @@ export async function getAudioFingerprint() {
 
       scriptProcessor.onaudioprocess = function (event) {
         const buffer = event.inputBuffer.getChannelData(0);
+        
+        // Debug: Check if buffer has data
+        const max = Math.max(...buffer);
+        const min = Math.min(...buffer);
+        console.log("Audio buffer range:", { min, max });
+
+        // Ensure buffer has signal variation
+        if (Math.abs(max - min) < 1e-5) {
+          console.warn("Buffer is flat or too quiet");
+          resolve("0");
+          return;
+        }
+
+        // Hash the buffer
         let hash = 0;
         for (let i = 0; i < buffer.length; i++) {
-          const value = Math.floor(buffer[i] * 1000);
-          hash = ((hash << 5) - hash) + value;
+          const val = Math.floor(buffer[i] * 1000);
+          hash = ((hash << 5) - hash) + val;
           hash |= 0;
         }
 
+        // Cleanup
         oscillator.stop();
         oscillator.disconnect();
         analyser.disconnect();
