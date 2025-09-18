@@ -28,8 +28,14 @@ export async function getAudioFingerprint() {
         const buffer = event.inputBuffer.getChannelData(0);
         
         // Debug: Check if buffer has data
-        const max = Math.max(...buffer);
-        const min = Math.min(...buffer);
+        //const max = Math.max(...buffer);
+        //const min = Math.min(...buffer);
+        let max = -Infinity, min = Infinity;
+        for (let i = 0; i < buffer.length; i++) {
+          const v = buffer[i];
+          if (v > max) max = v;
+          if (v < min) min = v;
+        }
         console.log("Audio buffer range:", { min, max });
 
         // Ensure buffer has signal variation
