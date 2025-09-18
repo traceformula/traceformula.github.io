@@ -1,26 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Audio Fingerprint Test</title>
+  <meta charset="UTF-8">
+  <title>Browser Fingerprinting Demo</title>
 </head>
 <body>
-  <h1>Audio Fingerprint</h1>
-  <button onclick="runFingerprint()">Get Audio Fingerprint</button>
-  <p id="result"></p>
+  <h1>Fingerprint Test</h1>
+  <button onclick="runFingerprint()">Get Fingerprints</button>
+
+  <h2>Results</h2>
+  <p><strong>Audio Fingerprint:</strong> <span id="audio-fp">N/A</span></p>
+  <p><strong>Canvas Fingerprint:</strong> <span id="canvas-fp">N/A</span></p>
+  <p><strong>Combined:</strong> <span id="combined-fp">N/A</span></p>
 
   <script type="module">
-    import { getAudioFingerprint } from './fringerprint.js';
+    import {
+      getAudioFingerprint,
+      getCanvasFingerprint,
+      getCombinedFingerprint
+    } from './fingerprint.js';
 
     window.runFingerprint = async function () {
-      const resultEl = document.getElementById('result');
-      resultEl.textContent = 'Calculating...';
+      document.getElementById('audio-fp').textContent = 'Calculating...';
+      document.getElementById('canvas-fp').textContent = 'Calculating...';
+      document.getElementById('combined-fp').textContent = 'Calculating...';
 
       try {
-        const fingerprint = await getAudioFingerprint();
-        resultEl.textContent = 'Audio Fingerprint: ' + fingerprint;
+        const { audio, canvas, combined } = await getCombinedFingerprint();
+        document.getElementById('audio-fp').textContent = audio;
+        document.getElementById('canvas-fp').textContent = canvas;
+        document.getElementById('combined-fp').textContent = combined;
       } catch (err) {
-        resultEl.textContent = 'Error: ' + err.message;
+        document.getElementById('audio-fp').textContent = 'Error';
+        document.getElementById('canvas-fp').textContent = 'Error';
+        document.getElementById('combined-fp').textContent = 'Error';
         console.error(err);
       }
     };
