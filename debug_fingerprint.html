@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Audio Debug Fingerprint</title></head>
+<body>
+  <button id="btn">Run Audio Debug Fingerprint</button>
+  <pre id="log"></pre>
+
+  <script type="module">
+    async function getAudioFingerprintDebug() {
+      const logEl = document.getElementById('log');
+      function log(msg) {
+        console.log(msg);
+        logEl.textContent += msg + "\n";
+      }
+      return new Promise((resolve, reject) => {
+        try {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          const ctx = new AudioContext();
+          const oscillator = ctx.createOscillator();
+          const analyser = ctx.createAnalyser();
+          const gain = ctx.createGain();
+          const scriptProcessor = ctx.createScriptProcessor(4096, 1, 1);
+
+          oscillator.type = 'sine';
+          oscillator.frequency.value = 440; // lower
+
+          gain.gain.value = 1;   // audible for now
+
+          oscillator.connect(analyser);
+          analyser.connect(gain);
+          gain.connect(scriptProcessor);
+          scriptProcessor.connect(ctx.destination);
+
+          oscillator.start(0);
+
+          scriptProcessor.onaudioprocess = function(event) {
+            const buffer = event.inputBuffer.getChannelData(0);
+            let max = -Infinity, min = Infinity;
+            for (let i = 0; i < buffer.length; i++) {
+              const v = buffer[i];
+              if (v > max) max = v;
+              if (v < min) min = v;
+            }
+            log(`Buffer min: ${min}, max: ${max}`);
+
+            // If still flat:
+            if (Math.abs(max - min) < 1e-6) {
+              log("Buffer seems flat (no variation)");
+              resolve("0");
+            } else {
+              // compute hash
+              let hash = 0;
+              for (let i = 0; i < buffer.length; i++) {
+                const val = Math.floor(buffer[i] * 1000);
+                hash = ((hash << 5) - hash) + val;
+                hash |= 0;
+              }
+              resolve(hash.toString());
+            }
+
+            // cleanup
+            oscillator.stop();
+            oscillator.disconnect();
+            analyser.disconnect();
+            gain.disconnect();
+            scriptProcessor.disconnect();
+            ctx.close();
+          };
+        } catch (err) {
+          reject(err);
+        }
+      });
+    }
+
+    document.getElementById('btn').addEventListener('click', async () => {
+      document.getElementById('log').textContent = '';
+      const fp = await getAudioFingerprintDebug();
+      document.getElementById('log').textContent += "Fingerprint: " + fp;
+    });
+  </script>
+</body>
+</html>
