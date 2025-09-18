@@ -1,4 +1,4 @@
-// audioFingerprint.js
+// fingerprint.js
 
 export async function getAudioFingerprint() {
   return new Promise((resolve, reject) => {
@@ -12,8 +12,7 @@ export async function getAudioFingerprint() {
 
       oscillator.type = 'triangle';
       oscillator.frequency.value = 10000;
-
-      gain.gain.value = 0; // Mute
+      gain.gain.value = 0;
 
       oscillator.connect(analyser);
       analyser.connect(gain);
@@ -44,4 +43,40 @@ export async function getAudioFingerprint() {
       reject(err);
     }
   });
+}
+
+export function getCanvasFingerprint() {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  canvas.width = 200;
+  canvas.height = 50;
+
+  ctx.textBaseline = 'top';
+  ctx.font = '16px Arial';
+  ctx.fillStyle = '#f60';
+  ctx.fillRect(0, 0, 200, 50);
+  ctx.fillStyle = '#069';
+  ctx.fillText('Hello, canvas fingerprint!', 2, 15);
+
+  const dataURL = canvas.toDataURL();
+
+  let hash = 0;
+  for (let i = 0; i < dataURL.length; i++) {
+    const chr = dataURL.charCodeAt(i);
+    hash = ((hash << 5) - hash) + chr;
+    hash |= 0;
+  }
+
+  return hash.toString();
+}
+
+export async function getCombinedFingerprint() {
+  const audio = await getAudioFingerprint();
+  const canvas = getCanvasFingerprint();
+  return {
+    audio,
+    canvas,
+    combined: audio + '_' + canvas,
+  };
 }
