@@ -81,7 +81,6 @@ class Planet {
     this.angle = Math.random() * Math.PI * 2;
     this.desc = desc;
     this.url = url;
-    this.hovered = false;
   }
 
   draw() {
@@ -124,7 +123,7 @@ function drawSun() {
   ctx.fill();
 }
 
-// Planets with descriptions and links
+// Planets
 const planets = [
   new Planet("Mercury", "gray", 5, 60, 0.03,
     "The closest planet to the Sun, Mercury is a rocky world with extreme temperatures.",
@@ -153,7 +152,7 @@ const planets = [
 ];
 
 // Mouse hover handler
-canvas.addEventListener("mousemove", e => {
+function checkHover(e) {
   const mx = e.offsetX;
   const my = e.offsetY;
 
@@ -167,19 +166,29 @@ canvas.addEventListener("mousemove", e => {
     }
   });
 
-  if (hoveringPlanet) {
+  // Check if mouse is over popup itself
+  const popupRect = popup.getBoundingClientRect();
+  const mouseOverPopup = (e.clientX >= popupRect.left && e.clientX <= popupRect.right &&
+                          e.clientY >= popupRect.top && e.clientY <= popupRect.bottom);
+
+  if (hoveringPlanet || mouseOverPopup) {
     systemPaused = true;
-    popup.style.display = "block";
-    popup.style.left = (mx + 15) + "px";
-    popup.style.top = (my + 15) + "px";
-    popupTitle.textContent = hoveringPlanet.name;
-    popupDesc.textContent = hoveringPlanet.desc;
-    popupLink.href = hoveringPlanet.url;
+    if (hoveringPlanet) {
+      popup.style.display = "block";
+      popup.style.left = (mx - 15) + "px";
+      popup.style.top = (my - 15) + "px";
+      popupTitle.textContent = hoveringPlanet.name;
+      popupDesc.textContent = hoveringPlanet.desc;
+      popupLink.href = hoveringPlanet.url;
+    }
   } else {
     systemPaused = false;
     popup.style.display = "none";
   }
-});
+}
+
+canvas.addEventListener("mousemove", checkHover);
+popup.addEventListener("mousemove", checkHover);
 
 // Animation loop
 function animate() {
