@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Solar System with Stars & Asteroids</title>
+<title>Realistic Solar System</title>
 <style>
   body { margin:0; overflow:hidden; background: radial-gradient(ellipse at center, #000010 0%, #000000 100%); }
   canvas { display:block; }
@@ -30,7 +30,6 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 let w = canvas.width, h = canvas.height;
-
 let systemPaused = false;
 
 const popup = document.getElementById("popup");
@@ -60,7 +59,20 @@ for(let i=0;i<120;i++){
   });
 }
 
-// Planet class (same as previous version with rotation)
+// Comets
+const comets = [];
+for(let i=0;i<10;i++){
+  comets.push({
+    x: Math.random()*w,
+    y: Math.random()*h,
+    vx: (Math.random()*2+1)*(Math.random()<0.5?-1:1),
+    vy: (Math.random()*2+1)*(Math.random()<0.5?-1:1),
+    size: Math.random()*2+1,
+    tailLength: Math.random()*40+30
+  });
+}
+
+// Planet class
 class Planet {
   constructor(name, size, distance, orbitSpeed, rotationSpeed, color1, color2, desc, url) {
     this.name = name;
@@ -74,17 +86,21 @@ class Planet {
     this.color2 = color2;
     this.desc = desc;
     this.url = url;
+    this.rx = distance;
+    this.ry = distance * (0.9 + Math.random()*0.2);
+    this.tilt = (Math.random()-0.5) * 1.57; // 1.57 rad ≈ 90°, ±45° from horizontal
   }
 
-  draw() {
-    const x = w/2 + this.distance * Math.cos(this.angle);
-    const y = h/2 + this.distance * Math.sin(this.angle);
+  update() {
+    if(!systemPaused){
+      this.angle += this.orbitSpeed;
+      this.rotationAngle += this.rotationSpeed;
+    }
 
-    // Orbit
-    ctx.beginPath();
-    ctx.strokeStyle = "rgba(255,255,255,0.05)";
-    ctx.arc(w/2, h/2, this.distance, 0, Math.PI*2);
-    ctx.stroke();
+    const x = w/2 + this.rx * Math.cos(this.angle) * Math.cos(this.tilt) - this.ry * Math.sin(this.angle) * Math.sin(this.tilt);
+    const y = h/2 + this.rx * Math.cos(this.angle) * Math.sin(this.tilt) + this.ry * Math.sin(this.angle) * Math.cos(this.tilt);
+    this.screenX = x;
+    this.screenY = y;
 
     ctx.save();
     ctx.translate(x,y);
@@ -116,8 +132,7 @@ class Planet {
     ctx.arc(0,0,this.size,0,Math.PI*2);
     ctx.fill();
 
-    // Atmosphere glow for Earth/Venus
-    if(this.name==="Earth" || this.name==="Venus") {
+    if(this.name==="Earth" || this.name==="Venus"){
       ctx.beginPath();
       ctx.strokeStyle = "rgba(100,150,255,0.2)";
       ctx.lineWidth=4;
@@ -126,17 +141,6 @@ class Planet {
     }
 
     ctx.restore();
-
-    this.screenX = x;
-    this.screenY = y;
-  }
-
-  update() {
-    if(!systemPaused) {
-      this.angle += this.orbitSpeed;
-      this.rotationAngle += this.rotationSpeed;
-    }
-    this.draw();
   }
 }
 
@@ -179,6 +183,11 @@ const planets = [
     "https://solarsystem.nasa.gov/planets/neptune/overview/")
 ];
 
+const tiltValues = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]; // radians
+planets.forEach((p,i)=>{
+    p.tilt = tiltValues[i];
+});
+
 // Hover & popup
 function checkHover(e){
   const mx = e.offsetX;
@@ -220,7 +229,7 @@ popup.addEventListener("mousemove", checkHover);
 function animate(){
   ctx.clearRect(0,0,w,h);
 
-  // Draw stars
+  // Stars
   stars.forEach(s => {
     ctx.beginPath();
     ctx.fillStyle = `rgba(255,255,255,${0.5+0.5*Math.sin(Date.now()/500 + s.brightness*10)})`;
@@ -230,7 +239,7 @@ function animate(){
 
   drawSun();
 
-  // Draw asteroid belt
+  // Asteroid belt
   asteroids.forEach(a=>{
     const x = w/2 + a.distance * Math.cos(a.angle);
     const y = h/2 + a.distance * Math.sin(a.angle);
@@ -241,20 +250,50 @@ function animate(){
     if(!systemPaused) a.angle += a.speed;
   });
 
-  // --- Draw planetary orbits ---
+  // Orbits
   ctx.save();
-  ctx.strokeStyle = "rgba(255,255,255,0.05)";
-  ctx.lineWidth = 1;
-  planets.forEach(p => {
-      ctx.beginPath();
-      ctx.arc(w/2, h/2, p.distance, 0, Math.PI*2);
-      ctx.stroke();
+  ctx.strokeStyle = "rgba(255,255,255,0.18)";
+  ctx.lineWidth = 1.5;
+  planets.forEach(p=>{
+    ctx.beginPath();
+    ctx.translate(w/2, h/2);
+    ctx.rotate(p.tilt);
+    ctx.scale(p.rx/p.ry,1);
+    ctx.arc(0,0,p.ry,0,Math.PI*2);
+    ctx.stroke();
+    ctx.setTransform(1,0,0,1,0,0);
   });
   ctx.restore();
-  // ----------------------------
 
-  // Draw planets
+  // Planets
   planets.forEach(p=>p.update());
+
+  // Comets
+  comets.forEach(c=>{
+    const tailGrad = ctx.createLinearGradient(c.x - c.vx*c.tailLength, c.y - c.vy*c.tailLength, c.x, c.y);
+    tailGrad.addColorStop(0, "rgba(255,255,255,0)");
+    tailGrad.addColorStop(1, "rgba(255,255,255,0.8)");
+    ctx.beginPath();
+    ctx.strokeStyle = tailGrad;
+    ctx.lineWidth = c.size;
+    ctx.moveTo(c.x - c.vx*c.tailLength, c.y - c.vy*c.tailLength);
+    ctx.lineTo(c.x, c.y);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.fillStyle = "white";
+    ctx.arc(c.x,c.y,c.size,0,Math.PI*2);
+    ctx.fill();
+
+    if(!systemPaused){
+      c.x += c.vx;
+      c.y += c.vy;
+      if(c.x > w+50) c.x=-50;
+      if(c.x < -50) c.x=w+50;
+      if(c.y > h+50) c.y=-50;
+      if(c.y < -50) c.y=h+50;
+    }
+  });
 
   requestAnimationFrame(animate);
 }
