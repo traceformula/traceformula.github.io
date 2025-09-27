@@ -153,14 +153,30 @@ function drawSun() {
 
 // Planets
 const planets = [
-  new Planet("Mercury",5,60,0.03,0.02,"#aaa","#777","Closest planet to the Sun","https://solarsystem.nasa.gov/planets/mercury/overview/"),
-  new Planet("Venus",8,100,0.02,0.01,"#e0c080","#b08040","Thick toxic atmosphere","https://solarsystem.nasa.gov/planets/venus/overview/"),
-  new Planet("Earth",9,150,0.015,0.015,"#3a7bd5","#1a3f60","Our home planet","https://solarsystem.nasa.gov/planets/earth/overview/"),
-  new Planet("Mars",7,200,0.012,0.02,"#d14f36","#7f2a1f","Red planet","https://solarsystem.nasa.gov/planets/mars/overview/"),
-  new Planet("Jupiter",20,270,0.008,0.005,"#d9b47c","#a26f4f","Gas giant with bands","https://solarsystem.nasa.gov/planets/jupiter/overview/"),
-  new Planet("Saturn",17,340,0.006,0.004,"#f0d78c","#cda96f","Ringed giant","https://solarsystem.nasa.gov/planets/saturn/overview/"),
-  new Planet("Uranus",14,400,0.004,0.006,"#a0e5f5","#487f88","Ice giant","https://solarsystem.nasa.gov/planets/uranus/overview/"),
-  new Planet("Neptune",14,460,0.003,0.006,"#3872e5","#0b2a5f","Ice giant far away","https://solarsystem.nasa.gov/planets/neptune/overview/")
+  new Planet("Mercury",5,60,0.03,0.02,"#aaa","#777",
+    "The closest planet to the Sun, Mercury is a rocky world with extreme temperatures.",
+    "https://solarsystem.nasa.gov/planets/mercury/overview/"),
+  new Planet("Venus",8,100,0.02,0.01,"#e0c080","#b08040",
+    "Venus has a thick, toxic atmosphere and surface temperatures hot enough to melt lead.",
+    "https://solarsystem.nasa.gov/planets/venus/overview/"),
+  new Planet("Earth",9,150,0.015,0.015,"#3a7bd5","#1a3f60",
+    "Our home planet, the only known world with life and liquid water on its surface.",
+    "https://solarsystem.nasa.gov/planets/earth/overview/"),
+  new Planet("Mars",7,200,0.012,0.02,"#d14f36","#7f2a1f",
+    "Known as the Red Planet, Mars is a target for future exploration and colonization.",
+    "https://solarsystem.nasa.gov/planets/mars/overview/"),
+  new Planet("Jupiter",20,270,0.008,0.005,"#d9b47c","#a26f4f",
+    "The largest planet in the Solar System, with dozens of moons and the Great Red Spot.",
+    "https://solarsystem.nasa.gov/planets/jupiter/overview/"),
+  new Planet("Saturn",17,340,0.006,0.004,"#f0d78c","#cda96f",
+    "Famous for its spectacular ring system, Saturn is a gas giant made mostly of hydrogen.",
+    "https://solarsystem.nasa.gov/planets/saturn/overview/"),
+  new Planet("Uranus",14,400,0.004,0.006,"#a0e5f5","#487f88",
+    "An ice giant tilted on its side, Uranus has a pale blue-green color due to methane.",
+    "https://solarsystem.nasa.gov/planets/uranus/overview/"),
+  new Planet("Neptune",14,460,0.003,0.006,"#3872e5","#0b2a5f",
+    "The farthest known planet, Neptune is a windy ice giant with a deep blue color.",
+    "https://solarsystem.nasa.gov/planets/neptune/overview/")
 ];
 
 // Hover & popup
@@ -225,7 +241,21 @@ function animate(){
     if(!systemPaused) a.angle += a.speed;
   });
 
+  // --- Draw planetary orbits ---
+  ctx.save();
+  ctx.strokeStyle = "rgba(255,255,255,0.05)";
+  ctx.lineWidth = 1;
+  planets.forEach(p => {
+      ctx.beginPath();
+      ctx.arc(w/2, h/2, p.distance, 0, Math.PI*2);
+      ctx.stroke();
+  });
+  ctx.restore();
+  // ----------------------------
+
+  // Draw planets
   planets.forEach(p=>p.update());
+
   requestAnimationFrame(animate);
 }
 animate();
