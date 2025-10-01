@@ -11,6 +11,7 @@
       background: #f9f9f9;
       color: #333;
     }
+
     header {
       background: #1e1e2f;
       color: #fff;
@@ -25,6 +26,7 @@
       margin-top: 5px;
       font-size: 1.2em;
     }
+
     .projects {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -33,19 +35,34 @@
       max-width: 1200px;
       margin: auto;
     }
+
     .card {
       background: #fff;
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
       padding: 20px;
-      transition: transform 0.2s ease;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      position: relative;
+      overflow: hidden;
     }
+
     .card:hover {
-      transform: translateY(-5px);
+      transform: translateY(-8px) scale(1.02);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
     }
+
+    .card-img {
+      width: 100%;
+      border-radius: 12px 12px 0 0;
+      object-fit: cover;
+      max-height: 180px;
+      margin-bottom: 15px;
+    }
+
     .card h2 {
       margin-top: 0;
     }
+
     .card a {
       display: inline-block;
       margin-top: 10px;
@@ -56,6 +73,7 @@
     .card a:hover {
       text-decoration: underline;
     }
+
     footer {
       text-align: center;
       padding: 20px;
@@ -68,82 +86,81 @@
 </head>
 <body>
   <header>
-    <h1>Thanh Nguyen</h1>
-    <p>Software Engineer • Creative Coder • Problem Solver</p>
+    <h1>Code & Cosmos</h1>
+    <p>Thanh Nguyen • Software Engineer • Creative Coder</p>
   </header>
 
   <section class="projects">
+    <!-- Live Projects with Thumbnails -->
     <div class="card">
-      <h2>🌌 Space Simulation</h2>
-      <p>
-        An interactive solar system built with JavaScript and HTML5 Canvas, featuring 
-        planets, tilted elliptical orbits, and comets.
-      </p>
-      <a href="solar.html" target="_blank">View Demo</a> |
+      <img src="images/solar.png" alt="Space Simulation" class="card-img">
+      <h2>🌌 Solar System Simulation</h2>
+      <p>An interactive solar system built with JavaScript and HTML5 Canvas, featuring planets, tilted elliptical orbits, and comets.</p>
+      <a href="space.html" target="_blank">View Demo</a> |
       <a href="https://github.com/traceformula/traceformula.github.io" target="_blank">Source Code</a>
     </div>
 
     <div class="card">
-      <h2>🐍 JPython</h2>
+      <img src="images/constellations.png" alt="Constellations" class="card-img">
+      <h2>✨ Constellations</h2>
       <p>
-        A Python interpreter built in JavaScript that runs directly in your browser, 
-        allowing you to experiment with Python code without any installation.
+        An interactive starfield visualization that draws constellations dynamically 
+        using JavaScript and Canvas. Explore celestial patterns and enjoy a 
+        real-time stargazing experience in your browser.
       </p>
-      <a href="jpython.html" target="_blank">View Demo</a> |
+      <a href="/" target="_blank">View Demo</a> |
       <a href="https://github.com/traceformula/traceformula.github.io" target="_blank">Source Code</a>
     </div>
 
     <div class="card">
+      <img src="images/srs.png" alt="SRS Tool" class="card-img">
       <h2>📚 SRS Tool</h2>
-      <p>
-        A simplified spaced repetition system inspired by Anki, helping users memorize 
-        information efficiently by scheduling review sessions based on learning progress. 
-        The app uses <strong>Firebase</strong> as its backend for storing user data and progress.
-      </p>
+      <p>A simplified spaced repetition system inspired by Anki, helping users memorize information efficiently. Uses <strong>Firebase</strong> as the backend for storing user data and progress.</p>
       <a href="srs" target="_blank">View Demo</a> |
       <a href="https://github.com/traceformula/srs" target="_blank">Source Code</a>
     </div>
 
     <div class="card">
+      <img src="images/jpython.png" alt="JPython" class="card-img">
+      <h2>🐍 JPython</h2>
+      <p>A Python interpreter built in JavaScript that runs directly in your browser, allowing you to experiment with Python code without installation.</p>
+      <a href="jpython" target="_blank">View Demo</a> |
+      <a href="https://github.com/traceformula/traceformula.github.io" target="_blank">Source Code</a>
+    </div>
+
+    <div class="card">
+      <img src="images/gameoflife.png" alt="Game of Life" class="card-img">
       <h2>🟩 Game of Life</h2>
-      <p>
-        A browser-based implementation of Conway's Game of Life, demonstrating 
-        cellular automata rules, dynamic patterns, and algorithmic thinking with JavaScript.
-      </p>
+      <p>A browser-based implementation of Conway's Game of Life, demonstrating cellular automata rules, dynamic patterns, and algorithmic thinking with JavaScript.</p>
       <a href="gameoflife.html" target="_blank">View Demo</a> |
       <a href="https://github.com/traceformula/traceformula.github.io" target="_blank">Source Code</a>
     </div>
 
     <div class="card">
+      <img src="images/latex.png" alt="LaTeX Visualizer" class="card-img">
       <h2>📝 LaTeX Visualizer</h2>
-      <p>
-        A simple LaTeX tool that allows users to write LaTeX code, instantly visualize 
-        the rendered output in the browser, and download it as a PDF.
-      </p>
+      <p>A simple LaTeX tool that allows users to write LaTeX code, instantly visualize the rendered output in the browser, and download it as a PDF.</p>
       <a href="latex.html" target="_blank">View Demo</a> |
       <a href="https://github.com/traceformula/traceformula.github.io" target="_blank">Source Code</a>
     </div>
 
+    <!-- Coming Soon -->
     <div class="card">
       <h2>📊 Data Visualization (Coming Soon)</h2>
-      <p>
-        Interactive charts and dashboards built with D3.js and modern web technologies.
-      </p>
+      <p>Interactive charts and dashboards built with D3.js and modern web technologies.</p>
       <a href="#">Demo</a> | <a href="#">Source Code</a>
     </div>
 
     <div class="card">
       <h2>🤖 Machine Learning Project (Coming Soon)</h2>
-      <p>
-        A project demonstrating applied ML models, experiments, and real-world use cases.
-      </p>
+      <p>A project demonstrating applied ML models, experiments, and real-world use cases.</p>
       <a href="#">Demo</a> | <a href="#">Source Code</a>
     </div>
   </section>
 
   <footer>
     © 2025 Thanh Nguyen — <a href="https://github.com/traceformula" style="color:#fff;">GitHub</a> 
-    | <a href="mailto:thanhtiennguyen2810@gmail.com" style="color:#fff;">Contact</a>
+    | <a href="mailto:your.email@example.com" style="color:#fff;">Contact</a>
   </footer>
 </body>
 </html>
