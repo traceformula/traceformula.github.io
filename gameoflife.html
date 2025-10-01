@@ -73,19 +73,19 @@
       <input type="file" id="imageInput" accept="image/*" />
     </label>
     <label>
-      Brush Size:
+      Brush Size (For Type "Dot"):
       <input type="range" id="brushSize" min="1" max="10" value="1" />
     </label>
     <label>
     Brush Type:
     <select id="brushType">
+      <option value="spacefiller">Space Filler</option>
       <option value="dot">Dot</option>
       <option value="square">Square</option>
       <option value="glider">Glider</option>
       <option value="blinker">Blinker</option>
       <option value="phantom">Phantom</option>
       <option value="fractalizedPhantom">Fractalized Phantom</option>
-      <option value="spacefiller">Space Filler</option>
       <option value="custom">Custom</option>
     </select>
   </label>
@@ -140,7 +140,7 @@
   let interval = null;
   let brushSize = 1;
 
-  let brushType = 'dot';
+  let brushType = 'spacefiller';
   let brushRotation = 0;
   let customBrush = [[0, 0]];
 
