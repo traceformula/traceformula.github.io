@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Code & Cosmos</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -25,6 +26,64 @@
     header p {
       margin-top: 5px;
       font-size: 1.2em;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .timeline {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 30px 0;
+    }
+    .timeline svg {
+      width: 100%;
+      max-width: 700px;
+      height: 100px;
+      display: block;
+      margin: 0 auto;
+    }
+
+    .axis line, .axis path {
+      stroke: #888;
+    }
+    .axis text {
+      font-size: 13px;
+      text-anchor: middle;
+      dominant-baseline: hanging;
+    }
+
+    .timeline-line {
+      stroke: #aaa;
+      stroke-width: 2px;
+    }
+
+    .event circle {
+      fill: steelblue;
+      r: 10;
+      transition: fill 0.3s, r 0.3s;
+      cursor: pointer;
+    }
+    .event circle:hover {
+      fill: orange;
+      r: 14;
+    }
+
+    .tooltip {
+      position: absolute;
+      background: white;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      pointer-events: none;
+      font-size: 14px;
+      max-width: 250px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      line-height: 1.4em;
+      z-index: 9999; /* keep tooltip above */
     }
 
     .projects {
@@ -95,6 +154,84 @@
     <h1>Code & Cosmos</h1>
     <p>Thanh Nguyen • Software Engineer • Creative Coder</p>
   </header>
+
+  <section class="timeline">
+    <svg></svg>
+    <div class="tooltip" style="opacity:0;"></div>
+
+    <script>
+      const svg = d3.select("svg")
+        .attr("width", "100%")
+        .attr("height", 100);
+
+      const width = 700;
+      const height = 100;
+      const tooltip = d3.select(".tooltip");
+
+      let data = [
+        {"year": "2021","title": "Software Development Engineer","organization": "Google","description": "Developed secure server-side services for YouTube & Google Search. Built platforms for compliance and transparency reporting in C++ and Python, and set engineering standards adopted across teams."},
+        {"year": "2018","title": "Software Development Engineer","organization": "Amazon","description": "Architected distributed services for DynamoDB replication logs. Implemented Just-in-Time Log Replica reducing recovery time from 15 to 1 minute, and led safe rollouts to new AWS regions."},
+        {"year": "2017","title": "Senior Software Engineer","organization": "Zocdoc","description": "Built ingestion services on AWS EMR/Spark integrating health records with DynamoDB/Redis. Re-engineered APIs in Scala/Node.js to cut latency by 40% and improve response times by 25%."},
+        {"year": "2016","title": "Software Engineer","organization": "Uber","description": "Developed a Go microservice aggregating trip, payment, and promotion data with 99.9% accuracy. Delivered ETL pipelines in Hive ensuring reliable datasets for pricing and payout systems."},
+        {"year": "2013","title": "Software Engineer","organization": "Anacle Systems","description": "Designed enterprise modules in C# and Android for finance, accounting, and asset management platforms serving corporate clients."},
+        {"year": "2012","title": "Founder & Engineer (Dashsell SaaS Platform)","organization": "Dashsell","description": "Developed a multilingual SaaS platform enabling instant mobile store creation. Recognized by Singapore’s Interactive Digital Media R&D program for cloud-based backend innovation."},
+        {"year": "2016","title": "M.S., Computer Science","organization": "Maharishi University of Management, USA","description": "Focused on advanced computer science concepts including distributed systems and cloud-native architectures."},
+        {"year": "2008","title": "B.S., Computer Science","organization": "Nanyang Technological University, Singapore","description": "Studied foundational computer science including algorithms, data structures, and systems programming."}
+      ];
+
+      // Parse years into Date objects
+      const parseYear = d3.timeParse("%Y");
+      data.forEach(d => { d.date = parseYear(d.year); });
+
+      // Time scale (proportional spacing)
+      const x = d3.scaleTime()
+        .domain(d3.extent(data, d => d.date))
+        .range([80, width - 80]);
+
+      const yPos = height * 0.65;
+
+      // Draw connecting line
+      svg.append("line")
+        .attr("class", "timeline-line")
+        .attr("x1", x(d3.min(data, d => d.date)))
+        .attr("x2", x(d3.max(data, d => d.date)))
+        .attr("y1", yPos)
+        .attr("y2", yPos);
+
+      // Axis
+      const xAxis = d3.axisBottom(x)
+        .ticks(d3.timeYear.every(1))
+        .tickFormat(d3.timeFormat("%Y"));
+
+      svg.append("g")
+        .attr("class", "axis")
+        .attr("transform", `translate(0,${yPos})`)
+        .call(xAxis);
+
+      // Events
+      const events = svg.selectAll(".event")
+        .data(data)
+        .enter().append("g")
+        .attr("class", "event")
+        .attr("transform", d => `translate(${x(d.date)},${yPos})`);
+
+      events.append("circle").attr("r", 8);
+
+      // Tooltip
+      events.on("mouseover", (event, d) => {
+        tooltip.transition().duration(200).style("opacity", 1);
+        tooltip.html(`
+          <strong>${d.year} – ${d.title}</strong><br/>
+          ${d.organization}<br/>
+          <em>${d.description}</em>
+        `)
+        .style("left", (event.pageX + 15) + "px")
+        .style("top", (event.pageY + 20) + "px");
+      }).on("mouseout", () => {
+        tooltip.transition().duration(200).style("opacity", 0);
+      });
+    </script>
+  </section>
 
   <section class="projects">
     <!-- Live Projects with Thumbnails -->
