@@ -59,6 +59,12 @@
       margin-bottom: 15px;
     }
 
+    .card a img:hover {
+      opacity: 0.9;
+      transform: scale(1.02);
+      transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+
     .card h2 {
       margin-top: 0;
     }
@@ -93,15 +99,19 @@
   <section class="projects">
     <!-- Live Projects with Thumbnails -->
     <div class="card">
-      <img src="images/solar.png" alt="Space Simulation" class="card-img">
+      <a href="solar" target="_blank">
+        <img src="images/solar.png" alt="Space Simulation" class="card-img">
+      </a>
       <h2>🌌 Solar System Simulation</h2>
       <p>An interactive solar system built with JavaScript and HTML5 Canvas, featuring planets, tilted elliptical orbits, and comets.</p>
-      <a href="space.html" target="_blank">View Demo</a> |
+      <a href="solar" target="_blank">View Demo</a> |
       <a href="https://github.com/traceformula/traceformula.github.io" target="_blank">Source Code</a>
     </div>
 
     <div class="card">
-      <img src="images/constellations.png" alt="Constellations" class="card-img">
+      <a href="/" target="_blank">
+        <img src="images/constellations.png" alt="Constellations" class="card-img">
+      </a>
       <h2>✨ Constellations</h2>
       <p>
         An interactive starfield visualization that draws constellations dynamically 
@@ -113,7 +123,9 @@
     </div>
 
     <div class="card">
-      <img src="images/srs.png" alt="SRS Tool" class="card-img">
+      <a href="srs" target="_blank">
+        <img src="images/srs.png" alt="SRS Tool" class="card-img">
+      </a>
       <h2>📚 SRS Tool</h2>
       <p>A simplified spaced repetition system inspired by Anki, helping users memorize information efficiently. Uses <strong>Firebase</strong> as the backend for storing user data and progress.</p>
       <a href="srs" target="_blank">View Demo</a> |
@@ -121,7 +133,9 @@
     </div>
 
     <div class="card">
-      <img src="images/jpython.png" alt="JPython" class="card-img">
+      <a href="jpython" target="_blank">
+        <img src="images/jpython.png" alt="JPython" class="card-img">
+      </a>
       <h2>🐍 JPython</h2>
       <p>A Python interpreter built in JavaScript that runs directly in your browser, allowing you to experiment with Python code without installation.</p>
       <a href="jpython" target="_blank">View Demo</a> |
@@ -129,18 +143,22 @@
     </div>
 
     <div class="card">
-      <img src="images/gameoflife.png" alt="Game of Life" class="card-img">
+      <a href="gameoflife" target="_blank">
+        <img src="images/gameoflife.png" alt="Game of Life" class="card-img">
+      </a>
       <h2>🟩 Game of Life</h2>
       <p>A browser-based implementation of Conway's Game of Life, demonstrating cellular automata rules, dynamic patterns, and algorithmic thinking with JavaScript.</p>
-      <a href="gameoflife.html" target="_blank">View Demo</a> |
+      <a href="gameoflife" target="_blank">View Demo</a> |
       <a href="https://github.com/traceformula/traceformula.github.io" target="_blank">Source Code</a>
     </div>
 
     <div class="card">
-      <img src="images/latex.png" alt="LaTeX Visualizer" class="card-img">
+      <a href="latex" target="_blank">
+        <img src="images/latex.png" alt="LaTeX Visualizer" class="card-img">
+      </a>
       <h2>📝 LaTeX Visualizer</h2>
       <p>A simple LaTeX tool that allows users to write LaTeX code, instantly visualize the rendered output in the browser, and download it as a PDF.</p>
-      <a href="latex.html" target="_blank">View Demo</a> |
+      <a href="latex" target="_blank">View Demo</a> |
       <a href="https://github.com/traceformula/traceformula.github.io" target="_blank">Source Code</a>
     </div>
 
@@ -160,7 +178,7 @@
 
   <footer>
     © 2025 Thanh Nguyen — <a href="https://github.com/traceformula" style="color:#fff;">GitHub</a> 
-    | <a href="mailto:your.email@example.com" style="color:#fff;">Contact</a>
+    | <a href="mailto:thanhtiennguyen2810@gmail.com" style="color:#fff;">Contact</a>
   </footer>
 </body>
 </html>
