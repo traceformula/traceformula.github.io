@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Global Knowledge Map</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0b1020; color: #e6e6e6; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; }
+    header { padding: 12px 16px; position: sticky; top: 0; backdrop-filter: blur(6px); background: rgba(11,16,32,0.6); border-bottom: 1px solid #1d2442; z-index: 2; }
+    .title { font-weight: 700; letter-spacing: .3px; }
+    .controls { display: flex; gap: 12px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
+    .search { flex: 1 1 280px; }
+    input, select { background: #111833; color: #e6e6e6; border: 1px solid #253058; border-radius: 10px; padding: 8px 10px; outline: none; }
+    input:focus { border-color: #6aa5ff; box-shadow: 0 0 0 3px rgba(106,165,255,0.2); }
+    .legend { display:flex; gap: 10px; align-items:center; font-size: 12px; opacity:.9 }
+    .pill { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border:1px solid #253058; border-radius:999px; }
+    .wrap { height: calc(100% - 96px); }
+    #graph { width: 100%; height: 100%; display: block; }
+    .node circle { stroke: #0b1020; stroke-width: 1.2px; cursor: pointer; }
+    .node text { font-size: 12px; pointer-events: none; fill: #dbe3ff; text-shadow: 0 1px 2px black; }
+    .node.source circle { opacity: .75; }
+    .link { stroke: #3a4a80; stroke-opacity: 0.35; }
+    .link.highlight { stroke-opacity: .9; }
+    .node.highlight circle { stroke: #6aa5ff; stroke-width: 2.5px; }
+    .tooltip {
+      position: absolute; pointer-events: none; background: #0f1734; border: 1px solid #2a3768;
+      padding: 8px 10px; border-radius: 10px; font-size: 12px; color: #e6e6e6; box-shadow: 0 10px 30px rgba(0,0,0,.45);
+    }
+    .footer { position: fixed; right: 10px; bottom: 10px; opacity: .8; font-size: 12px; }
+    .hint { opacity: .7; font-size: 12px; }
+    a { color: #9dc0ff; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title">🗺️ Global Knowledge Map</div>
+    <div class="controls">
+      <input id="search" class="search" placeholder="Search a topic or source (e.g., 'aws', 'EC2', book title)…" />
+      <select id="filter">
+        <option value="all">All nodes</option>
+        <option value="topic">Topics only</option>
+        <option value="book">Books only</option>
+        <option value="course">Courses only</option>
+      </select>
+      <button id="fit">Fit</button>
+      <div class="legend">
+        <span class="pill" style="color:#6aa5ff">● topic</span>
+        <span class="pill" style="color:#92e6a7">● book</span>
+        <span class="pill" style="color:#ffd166">● course</span>
+      </div>
+    </div>
+    <div class="hint">Tip: click a node to highlight neighbors; double-click to isolate; drag to rearrange; scroll to zoom; hold space + drag to pan.</div>
+  </header>
+  <div class="wrap">
+    <svg id="graph"></svg>
+  </div>
+  <div class="footer">Built with D3 force simulation</div>
+
+  <div id="tooltip" class="tooltip" style="display:none;"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script>
+  const W = window.innerWidth;
+  const H = window.innerHeight - 120;
+  const svg = d3.select("#graph")
+    .attr("viewBox", [0, 0, W, H])
+    .attr("width", "100%")
+    .attr("height", "100%");
+
+  const gLinks = svg.append("g").attr("stroke-linecap","round");
+  const gNodes = svg.append("g");
+  const tooltip = d3.select("#tooltip");
+
+  let data, sim, linkSel, nodeSel, labelSel;
+  let isolated = false;
+
+  fetch('data.json')
+    .then(r => r.json())
+    .then(json => {
+      data = json;
+      init();
+    });
+
+  function colorFor(d){
+    if(d.kind === "topic") return "#6aa5ff";
+    if(d.sourceType === "book") return "#92e6a7";
+    if(d.sourceType === "course") return "#ffd166";
+    return "#cccccc";
+  }
+
+  function init(){
+    sim = d3.forceSimulation(data.nodes)
+      .force("link", d3.forceLink(data.links).id(d => d.id).distance(l => (l.target.r || 12) * 4).strength(0.1))
+      .force("charge", d3.forceManyBody().strength(-80))
+      .force("center", d3.forceCenter(W/2, H/2))
+      .force("collide", d3.forceCollide().radius(d => (d.r || 8) + 2));
+
+    linkSel = gLinks.selectAll("line")
+      .data(data.links)
+      .join("line")
+      .attr("class", "link")
+      .attr("stroke-width", 1.2);
+
+    const node = gNodes.selectAll("g.node")
+      .data(data.nodes)
+      .join(enter => {
+        const g = enter.append("g").attr("class", d => "node " + (d.kind || d.sourceType || "node"));
+        g.append("circle")
+          .attr("r", d => d.r || 6)
+          .attr("fill", colorFor)
+          .on("mouseover", (ev,d) => showTip(ev, d))
+          .on("mouseout", hideTip)
+          .on("click", (ev, d) => highlightNode(d))
+          .on("dblclick", (ev, d) => isolateNode(d))
+          .call(d3.drag()
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended));
+        g.append("text")
+          .attr("dy", 3)
+          .attr("x", d => (d.r || 8) + 3)
+          .text(labelText);
+        return g;
+      });
+
+    nodeSel = node;
+    labelSel = node.select("text");
+
+    sim.on("tick", () => {
+      linkSel
+        .attr("x1", d => d.source.x)
+        .attr("y1", d => d.source.y)
+        .attr("x2", d => d.target.x)
+        .attr("y2", d => d.target.y);
+
+      nodeSel.attr("transform", d => `translate(${d.x},${d.y})`);
+    });
+
+    svg.call(d3.zoom()
+      .scaleExtent([0.2, 4])
+      .on("zoom", (ev) => {
+        gLinks.attr("transform", ev.transform);
+        gNodes.attr("transform", ev.transform);
+      }));
+
+    document.getElementById("fit").addEventListener("click", fit);
+    document.getElementById("search").addEventListener("input", onSearch);
+    document.getElementById("filter").addEventListener("change", onFilter);
+  }
+
+  function labelText(d){
+    if(d.kind === "topic") return d.topic;
+    return d.title?.slice(0, 48) || d.id;
+  }
+
+  function showTip(ev, d){
+    let html = "";
+    if(d.kind === "topic"){
+      html = `<b>Topic</b><br>${d.topic}`;
+    }else{
+      html = `<b>${d.sourceType === "book" ? "Book" : "Course"}</b><br>${d.title}`;
+      if(d.description) html += `<br><i>${d.description}</i>`;
+    }
+    tooltip.style("display","block")
+      .style("left", (ev.pageX + 12) + "px")
+      .style("top", (ev.pageY + 12) + "px")
+      .html(html);
+  }
+  function hideTip(){ tooltip.style("display","none"); }
+
+  function neighborsOf(node){
+    const adj = new Set();
+    data.links.forEach(l => {
+      if(l.source.id === node.id){ adj.add(l.target.id); }
+      if(l.target.id === node.id){ adj.add(l.source.id); }
+    });
+    return adj;
+  }
+
+  function highlightNode(node){
+    const adj = neighborsOf(node);
+    nodeSel.classed("highlight", d => d.id === node.id || adj.has(d.id));
+    linkSel.classed("highlight", l => l.source.id === node.id || l.target.id === node.id);
+  }
+
+  function isolateNode(node){
+    isolated = !isolated;
+    if(!isolated){
+      nodeSel.style("display", null);
+      linkSel.style("display", null);
+      return;
+    }
+    const keep = new Set([node.id, ...neighborsOf(node)]);
+    nodeSel.style("display", d => keep.has(d.id) ? null : "none");
+    linkSel.style("display", l => (keep.has(l.source.id) && keep.has(l.target.id)) ? null : "none");
+  }
+
+  function dragstarted(event, d) {
+    if (!event.active) sim.alphaTarget(0.3).restart();
+    d.fx = d.x;
+    d.fy = d.y;
+  }
+  function dragged(event, d) {
+    d.fx = event.x;
+    d.fy = event.y;
+  }
+  function dragended(event, d) {
+    if (!event.active) sim.alphaTarget(0);
+    d.fx = null;
+    d.fy = null;
+  }
+
+  function onSearch(ev){
+    const q = ev.target.value.trim().toLowerCase();
+    if(!q){
+      nodeSel.classed("highlight", false);
+      linkSel.classed("highlight", false);
+      return;
+    }
+    nodeSel.classed("highlight", d => (d.topic?.toLowerCase().includes(q)) || (d.title?.toLowerCase().includes(q)));
+    linkSel.classed("highlight", l => {
+      const s = (l.source.title || l.source.topic || "").toLowerCase();
+      const t = (l.target.title || l.target.topic || "").toLowerCase();
+      return s.includes(q) || t.includes(q);
+    });
+  }
+
+  function onFilter(ev){
+    const v = ev.target.value;
+    nodeSel.style("display", d => {
+      if(v === "all") return null;
+      if(v === "topic") return d.kind === "topic" ? null : "none";
+      if(v === "book") return d.sourceType === "book" ? null : "none";
+      if(v === "course") return d.sourceType === "course" ? null : "none";
+      return null;
+    });
+    linkSel.style("display", l => {
+      if(v === "all") return null;
+      if(v === "topic") return (l.source.kind === "topic" || l.target.kind === "topic") ? null : "none";
+      if(v === "book") return (l.source.sourceType === "book" || l.target.sourceType === "book") ? null : "none";
+      if(v === "course") return (l.source.sourceType === "course" || l.target.sourceType === "course") ? null : "none";
+      return null;
+    });
+  }
+
+  function fit(){
+    const visibleNodes = nodeSel.filter(function(){ return this.style.display !== "none"; }).data();
+    if(!visibleNodes.length) return;
+    const xs = visibleNodes.map(d => d.x);
+    const ys = visibleNodes.map(d => d.y);
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    const w = maxX - minX, h = maxY - minY;
+    const k = 0.9 / Math.max(w / W, h / H);
+    const tx = W/2 - k * (minX + w/2);
+    const ty = H/2 - k * (minY + h/2);
+    svg.transition().duration(600).call(
+      d3.zoom().transform,
+      d3.zoomIdentity.translate(tx, ty).scale(k)
+    );
+  }
+  </script>
+</body>
+</html>
