@@ -1,942 +1,328 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Dark Space — Home</title>
-<style>
-  :root{
-    --bg:#05040a;
-    --accent:#ffcc66;
-  }
-  html,body{
-    height:100%;
-    margin:0;
-    background: radial-gradient(1200px 600px at 20% 10%, rgba(40,32,60,0.12), transparent 8%),
-                radial-gradient(900px 350px at 80% 80%, rgba(20,30,40,0.08), transparent 6%),
-                var(--bg);
-    color:#ddd;
-    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-    -webkit-font-smoothing:antialiased;
-    -moz-osx-font-smoothing:grayscale;
-  }
+  <meta charset="UTF-8">
+  <title>Code & Cosmos</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f9f9f9;
+      color: #333;
+    }
 
-  header{
-    position:fixed;
-    top:16px;
-    left:16px;
-    z-index:20;
-    display:flex;
-    gap:10px;
-    align-items:center;
-    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-    border:1px solid rgba(255,255,255,0.03);
-    padding:8px 12px;
-    border-radius:12px;
-    backdrop-filter: blur(6px) saturate(1.2);
-  }
-  header h1{ font-size:14px; margin:0; color:#fff; letter-spacing:0.6px;}
-  header small{ display:block; opacity:0.7; font-size:11px; }
+    header {
+      background: #1e1e2f;
+      color: #fff;
+      padding: 20px;
+      text-align: center;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2.5em;
+    }
+    header p {
+      margin-top: 5px;
+      font-size: 1.2em;
+    }
 
-  #ui {
-    position:fixed;
-    right:16px;
-    top:16px;
-    z-index:20;
-    display:flex;
-    gap:8px;
-    flex-direction:column;
-  }
-  .btn {
-    background:transparent;
-    color:#ddd;
-    border:1px solid rgba(255,255,255,0.05);
-    padding:6px 10px;
-    border-radius:10px;
-    cursor:pointer;
-    font-size:13px;
-    backdrop-filter: blur(6px);
-  }
-  .btn:active{ transform: translateY(1px); }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
 
-  #canvas {
-    display:block;
-    width:100%;
-    height:100vh;
-  }
+    .timeline {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 30px 0;
+    }
+    .timeline svg {
+      width: 100%;
+      max-width: 700px;
+      height: 100px;
+      display: block;
+      margin: 0 auto;
+    }
 
-  .legend {
-    position:fixed;
-    left:16px;
-    bottom:16px;
-    z-index:20;
-    color:#bbb;
-    font-size:13px;
-    background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));
-    padding:10px 12px;
-    border-radius:10px;
-    border:1px solid rgba(255,255,255,0.02);
-  }
+    .axis line, .axis path {
+      stroke: #888;
+    }
+    .axis text {
+      font-size: 13px;
+      text-anchor: middle;
+      dominant-baseline: hanging;
+    }
 
-  @media (max-width:600px){
-    header h1{ font-size:13px; }
-    .legend{ font-size:12px; }
-  }
-</style>
+    .timeline-line {
+      stroke: #aaa;
+      stroke-width: 2px;
+    }
+
+    .event circle {
+      fill: steelblue;
+      r: 10;
+      transition: fill 0.3s, r 0.3s;
+      cursor: pointer;
+    }
+    .event circle:hover {
+      fill: orange;
+      r: 14;
+    }
+
+    .tooltip {
+      position: absolute;
+      background: white;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      pointer-events: none;
+      font-size: 14px;
+      max-width: 250px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      line-height: 1.4em;
+      z-index: 9999; /* keep tooltip above */
+    }
+
+    .projects {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      padding: 40px;
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      padding: 20px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card:hover {
+      transform: translateY(-8px) scale(1.02);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+
+    .card-img {
+      width: 100%;
+      border-radius: 12px 12px 0 0;
+      object-fit: cover;
+      max-height: 180px;
+      margin-bottom: 15px;
+    }
+
+    .card a img:hover {
+      opacity: 0.9;
+      transform: scale(1.02);
+      transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+
+    .card h2 {
+      margin-top: 0;
+    }
+
+    .card a {
+      display: inline-block;
+      margin-top: 10px;
+      color: #0077cc;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .card a:hover {
+      text-decoration: underline;
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 0.9em;
+      background: #1e1e2f;
+      color: #fff;
+      margin-top: 40px;
+    }
+  </style>
 </head>
 <body>
   <header>
-    <div>
-      <h1>Dark Space</h1>
-      <small>Sun & orbital planets — procedural textures</small>
-    </div>
+    <h1>Code & Cosmos</h1>
+    <p>Thanh Nguyen • Software Engineer • Designing systems, building tools, and sharing knowledge</p>
   </header>
 
-  <div id="ui">
-    <button class="btn" id="toggleOrbits">Toggle Orbits</button>
-    <button class="btn" id="toggleLabels">Toggle Labels</button>
-    <button class="btn" id="speedDown">Slower</button>
-    <button class="btn" id="speedUp">Faster</button>
-    <button class="btn" id="regen">Regenerate Textures</button>
-  </div>
+  <section class="timeline">
+    <svg></svg>
+    <div class="tooltip" style="opacity:0;"></div>
 
-  <canvas id="canvas"></canvas>
+    <script>
+      const svg = d3.select("svg")
+        .attr("width", "100%")
+        .attr("height", 100);
 
-  <div class="legend" id="legend">Drag to pan • Scroll to zoom • Click planet to focus</div>
+      const width = 700;
+      const height = 100;
+      const tooltip = d3.select(".tooltip");
 
-<script>
-/* =============================
-   Dark Space — main script
-   - Canvas animation with sun + planets
-   - Procedural planet textures (value noise + fBm)
-   - Orbits, labels, interactivity
-   ============================= */
+      let data = [
+        {"year": "2021","title": "Software Development Engineer","organization": "Google","description": "Developed secure server-side services for YouTube & Google Search. Built platforms for compliance and transparency reporting in C++ and Python, and set engineering standards adopted across teams."},
+        {"year": "2018","title": "Software Development Engineer","organization": "Amazon","description": "Architected distributed services for DynamoDB replication logs. Implemented Just-in-Time Log Replica reducing recovery time from 15 to 1 minute, and led safe rollouts to new AWS regions."},
+        {"year": "2017","title": "Senior Software Engineer","organization": "Zocdoc","description": "Built ingestion services on AWS EMR/Spark integrating health records with DynamoDB/Redis. Re-engineered APIs in Scala/Node.js to cut latency by 40% and improve response times by 25%."},
+        {"year": "2016","title": "Software Engineer","organization": "Uber","description": "Developed a Go microservice aggregating trip, payment, and promotion data with 99.9% accuracy. Delivered ETL pipelines in Hive ensuring reliable datasets for pricing and payout systems."},
+        {"year": "2013","title": "Software Engineer","organization": "Anacle Systems","description": "Designed enterprise modules in C# and Android for finance, accounting, and asset management platforms serving corporate clients."},
+        {"year": "2012","title": "Founder & Engineer (Dashsell SaaS Platform)","organization": "Dashsell","description": "Developed a multilingual SaaS platform enabling instant mobile store creation. Recognized by Singapore’s Interactive Digital Media R&D program for cloud-based backend innovation."},
+        {"year": "2016","title": "M.S., Computer Science","organization": "Maharishi University of Management, USA","description": "Focused on advanced computer science concepts including distributed systems and cloud-native architectures."},
+        {"year": "2008","title": "B.S., Computer Science","organization": "Nanyang Technological University, Singapore","description": "Studied foundational computer science including algorithms, data structures, and systems programming."}
+      ];
 
-(() => {
-  const canvas = document.getElementById('canvas');
-  const ctx = canvas.getContext('2d', { alpha: false });
+      // Parse years into Date objects
+      const parseYear = d3.timeParse("%Y");
+      data.forEach(d => { d.date = parseYear(d.year); });
 
-  // DPR for crispness
-  let DPR = Math.min(window.devicePixelRatio || 1, 2);
+      // Time scale (proportional spacing)
+      const x = d3.scaleTime()
+        .domain(d3.extent(data, d => d.date))
+        .range([80, width - 80]);
 
-  function resizeCanvas() {
-    DPR = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = Math.floor(innerWidth * DPR);
-    canvas.height = Math.floor(innerHeight * DPR);
-    canvas.style.width = innerWidth + 'px';
-    canvas.style.height = innerHeight + 'px';
-    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  }
-  window.addEventListener('resize', resizeCanvas);
-  resizeCanvas();
+      const yPos = height * 0.65;
 
-  // Utility: seeded PRNG
-  function mulberry32(a) {
-    return function() {
-      var t = a += 0x6D2B79F5;
-      t = Math.imul(t ^ t >>> 15, t | 1);
-      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-      return ((t ^ t >>> 14) >>> 0) / 4294967296;
-    }
-  }
+      // Draw connecting line
+      svg.append("line")
+        .attr("class", "timeline-line")
+        .attr("x1", x(d3.min(data, d => d.date)))
+        .attr("x2", x(d3.max(data, d => d.date)))
+        .attr("y1", yPos)
+        .attr("y2", yPos);
 
-  // Value noise 2D + fBm
-  class Noise {
-    constructor(seed=1) {
-      this.seed = seed|0;
-      this.rand = mulberry32(this.seed);
-      this.perm = new Uint8Array(512);
-      // generate permutation table
-      const p = new Uint8Array(256);
-      for (let i=0;i<256;i++) p[i]=i;
-      for (let i=255;i>0;i--){
-        const j = Math.floor(this.rand()*(i+1));
-        const tmp = p[i]; p[i]=p[j]; p[j]=tmp;
-      }
-      for (let i=0;i<512;i++) this.perm[i]=p[i & 255];
-    }
-    // smooth interpolation
-    fade(t){ return t*t*t*(t*(t*6-15)+10); }
-    lerp(a,b,t){ return a + t*(b-a); }
+      // Axis
+      const xAxis = d3.axisBottom(x)
+        .ticks(d3.timeYear.every(1))
+        .tickFormat(d3.timeFormat("%Y"));
 
-    // value at integer grid point
-    valueAt(ix,iy){
-      // pseudo-random based on permutation
-      const idx = (this.perm[ix & 255] + iy) & 255;
-      // map to [-1,1]
-      return (this.perm[idx] / 255) * 2 - 1;
-    }
+      svg.append("g")
+        .attr("class", "axis")
+        .attr("transform", `translate(0,${yPos})`)
+        .call(xAxis);
 
-    // 2D value noise
-    noise(x,y){
-      const ix = Math.floor(x);
-      const iy = Math.floor(y);
-      const fx = x - ix;
-      const fy = y - iy;
-      const a = this.valueAt(ix,iy);
-      const b = this.valueAt(ix+1,iy);
-      const c = this.valueAt(ix,iy+1);
-      const d = this.valueAt(ix+1,iy+1);
-      const u = this.fade(fx);
-      const v = this.fade(fy);
-      const x1 = this.lerp(a,b,u);
-      const x2 = this.lerp(c,d,u);
-      return this.lerp(x1,x2,v);
-    }
+      // Events
+      const events = svg.selectAll(".event")
+        .data(data)
+        .enter().append("g")
+        .attr("class", "event")
+        .attr("transform", d => `translate(${x(d.date)},${yPos})`);
 
-    // fractal brownian motion
-    fbm(x,y,octaves=5, lac=2, gain=0.5) {
-      let amp = 1, freq = 1, sum = 0, norm = 0;
-      for (let i=0;i<octaves;i++){
-        sum += amp * this.noise(x*freq, y*freq);
-        norm += amp;
-        amp *= gain;
-        freq *= lac;
-      }
-      return sum / norm;
-    }
-  }
+      events.append("circle").attr("r", 8);
 
-  // Generate a planet texture on an offscreen canvas
-  function generatePlanetTexture(radius, options = {}) {
-    const size = Math.ceil(radius*2);
-    const off = document.createElement('canvas');
-    off.width = size;
-    off.height = size;
-    const octx = off.getContext('2d');
-
-    // choose seed for variety
-    const seed = options.seed ?? Math.floor(Math.random()*1e9);
-    const noise = new Noise(seed);
-
-    // core color maps — try to emulate planet types
-    const colorStops = options.stops || [
-      {t:0.0, c:[20,20,40]},    // deep shadow
-      {t:0.2, c:[60,40,30]},    // terrain
-      {t:0.5, c:[120,100,80]},  // mid
-      {t:0.75, c:[200,170,120]},// light
-      {t:1.0, c:[255,240,230]}  // highlight
-    ];
-
-    const cx = size/2, cy = size/2;
-    const maxR = radius;
-
-    const img = octx.createImageData(size,size);
-    const data = img.data;
-
-    // generate noise-based texture
-    for (let y=0;y<size;y++){
-      for (let x=0;x<size;x++){
-        const dx = x - cx;
-        const dy = y - cy;
-        const dist = Math.sqrt(dx*dx+dy*dy);
-        const idx = (y*size + x) * 4;
-
-        if (dist > maxR) {
-          data[idx] = data[idx+1] = data[idx+2] = 0;
-          data[idx+3] = 0;
-          continue;
-        }
-
-        // spherical coordinates to simulate bands/lighting
-        const nx = dx / maxR;
-        const ny = dy / maxR;
-        const lon = Math.atan2(ny, nx) / (2*Math.PI); // wrap
-        const lat = Math.asin(dy / maxR) / Math.PI;
-
-        // base noise with multiple octaves, tilt it with lat/lon
-        const n = 0.5*noise.fbm( (lon+0.5)*8, (lat+0.5)*8, 6, 2.0, 0.5 )
-                + 0.5*noise.fbm( (lon+0.5)*20, (lat+0.5)*20, 3, 2.0, 0.45);
-
-        // bias for bands or storms
-        const band = Math.sin((lon + options.bandOffset || 0) * (options.bandFreq || 8)) * 0.2;
-        const value = Math.max(-1, Math.min(1, n + band*0.6));
-
-        // map value to color stops
-        let col = [0,0,0];
-        for (let s=0; s<colorStops.length-1; s++){
-          const a = colorStops[s];
-          const b = colorStops[s+1];
-          const range = b.t - a.t;
-          // remap value (-1..1) to (0..1)
-          const v01 = (value + 1)/2;
-          if (v01 >= a.t && v01 <= b.t) {
-            const tt = (v01 - a.t) / Math.max(0.0001, range);
-            col[0] = Math.round(a.c[0] + (b.c[0]-a.c[0])*tt);
-            col[1] = Math.round(a.c[1] + (b.c[1]-a.c[1])*tt);
-            col[2] = Math.round(a.c[2] + (b.c[2]-a.c[2])*tt);
-            break;
-          }
-        }
-
-        // add subtle specular (depending on angle to light)
-        const lightDir = options.lightDir || [0.8, -0.4, 0.2]; // normalized
-        // normal approximation on sphere:
-        const zx = dx / maxR;
-        const zy = dy / maxR;
-        const zz = Math.sqrt(Math.max(0, 1 - zx*zx - zy*zy));
-        const ndotl = Math.max(0, zx*lightDir[0] + zy*lightDir[1] + zz*lightDir[2]);
-
-        // rim shadow / ambient occlusion based on curvature
-        const rim = Math.pow(1 - (dist/maxR), 2.2);
-
-        // final color mixing
-        const ambient = 0.12;
-        const light = 0.9 * ndotl;
-        const r = Math.min(255, col[0]*(ambient + light) * rim);
-        const g = Math.min(255, col[1]*(ambient + light) * rim);
-        const b2 = Math.min(255, col[2]*(ambient + light) * rim);
-
-        // subtle cloud layer (white-ish) using higher-frequency noise
-        const clouds = Math.max(0, noise.fbm((x+seed)*0.01, (y+seed)*0.01, 4, 2.2, 0.6) - 0.25);
-        const cloudMask = Math.pow(Math.max(0, clouds), 2) * (options.clouds ? 1.0 : 0);
-
-        data[idx] = Math.round(r + (255-r)*0.45*cloudMask);
-        data[idx+1] = Math.round(g + (255-g)*0.45*cloudMask);
-        data[idx+2] = Math.round(b2 + (255-b2)*0.45*cloudMask);
-
-        data[idx+3] = 255;
-      }
-    }
-
-    octx.putImageData(img, 0, 0);
-
-    // add a soft atmosphere glow using radial gradient
-    const g = octx.createRadialGradient(cx, cy, radius*0.6, cx, cy, radius*1.2);
-    const atmosphereColor = options.atmosphereColor || 'rgba(120,160,240,0.08)';
-    g.addColorStop(0, 'rgba(255,255,255,0)');
-    g.addColorStop(1, atmosphereColor);
-    octx.globalCompositeOperation = 'lighter';
-    octx.fillStyle = g;
-    octx.beginPath();
-    octx.arc(cx, cy, radius*1.18, 0, Math.PI*2);
-    octx.fill();
-    octx.globalCompositeOperation = 'source-over';
-
-    // optionally add subtle surface scratches / details using multiply
-    return {canvas: off, seed};
-  }
-
-  // Scene parameters
-  let scene = {
-    time: 0,
-    speed: 1.0,
-    showOrbits: true,
-    showLabels: true,
-    focus: null,
-    pan: {x:0,y:0},
-    zoom: 1.0
-  };
-
-  // Build planets (data)
-  const planetDefs = [
-    {
-      name: 'Mercury',
-      radius: 6,
-      dist: 60,
-      orbitalPeriod: 88,
-      colorScheme: [[0.0,[30,28,30]],[0.5,[110,100,90]],[1.0,[200,190,180]]],
-      clouds: false
-    },
-    {
-      name: 'Venus',
-      radius: 10,
-      dist: 90,
-      orbitalPeriod: 225,
-      colorScheme: [[0.0,[80,60,50]],[0.5,[200,150,120]],[1.0,[240,210,160]]],
-      clouds: true,
-      bandFreq: 12
-    },
-    {
-      name: 'Earth',
-      radius: 14,
-      dist: 130,
-      orbitalPeriod: 365,
-      colorScheme: [[0.0,[10,30,80]],[0.4,[20,80,40]],[0.8,[200,200,230]],[1.0,[255,255,255]]],
-      clouds: true,
-      bandFreq: 6
-    },
-    {
-      name: 'Mars',
-      radius: 11,
-      dist: 170,
-      orbitalPeriod: 687,
-      colorScheme: [[0.0,[60,20,10]],[0.5,[160,80,70]],[1.0,[220,180,160]]],
-      clouds: false
-    },
-    {
-      name: 'Jupiter',
-      radius: 38,
-      dist: 260,
-      orbitalPeriod: 4333,
-      colorScheme: [[0.0,[60,40,30]],[0.4,[160,110,80]],[0.75,[220,190,160]],[1.0,[240,220,180]]],
-      clouds: false,
-      bandFreq: 20
-    },
-    {
-      name: 'Saturn',
-      radius: 32,
-      dist: 330,
-      orbitalPeriod: 10759,
-      colorScheme: [[0.0,[80,70,55]],[0.4,[190,160,120]],[1.0,[230,210,180]]],
-      clouds: false,
-      rings: true
-    },
-    {
-      name: 'Uranus',
-      radius: 22,
-      dist: 400,
-      orbitalPeriod: 30687,
-      colorScheme: [[0.0,[120,170,190]],[0.6,[140,200,220]],[1.0,[220,240,250]]],
-      clouds: false
-    },
-    {
-      name: 'Neptune',
-      radius: 22,
-      dist: 460,
-      orbitalPeriod: 60190,
-      colorScheme: [[0.0,[20,40,120]],[0.6,[30,70,160]],[1.0,[120,200,230]]],
-      clouds: false
-    }
-  ];
-
-  // Convert colorScheme into stops expected by generator
-  function mapStops(sc) {
-    return sc.map(s => ({t:s[0], c:s[1]}));
-  }
-
-  // create planet objects with textures
-  let planets = [];
-  function buildPlanets() {
-    planets = [];
-    for (let i=0;i<planetDefs.length;i++){
-      const def = planetDefs[i];
-      const displayRadius = def.radius; // base radius in pixels (scaled later)
-      const opts = {
-        stops: mapStops(def.colorScheme),
-        clouds: def.clouds || false,
-        bandFreq: def.bandFreq || 6,
-        bandOffset: Math.random()*10,
-        atmosphereColor: def.atmosphereColor || 'rgba(100,140,255,0.06)',
-        lightDir: [0.9, -0.25, 0.35],
-        seed: Math.floor(Math.random()*1e9)
-      };
-      const tex = generatePlanetTexture(displayRadius, opts);
-      planets.push({
-        def,
-        texture: tex,
-        radius: displayRadius,
-        dist: def.dist,
-        orbitalPeriod: def.orbitalPeriod,
-        angleOffset: Math.random()*Math.PI*2,
-        name: def.name,
-        rings: def.rings || false
+      // Tooltip
+      events.on("mouseover", (event, d) => {
+        tooltip.transition().duration(200).style("opacity", 1);
+        tooltip.html(`
+          <strong>${d.year} – ${d.title}</strong><br/>
+          ${d.organization}<br/>
+          <em>${d.description}</em>
+        `)
+        .style("left", (event.pageX + 15) + "px")
+        .style("top", (event.pageY + 20) + "px");
+      }).on("mouseout", () => {
+        tooltip.transition().duration(200).style("opacity", 0);
       });
-    }
-  }
-  buildPlanets();
+    </script>
+  </section>
 
-  // star field background (pre-rendered)
-  const starCanvas = document.createElement('canvas');
-  function buildStars(){
-    const w = innerWidth * DPR;
-    const h = innerHeight * DPR;
-    starCanvas.width = w;
-    starCanvas.height = h;
-    const sctx = starCanvas.getContext('2d');
-    sctx.fillStyle = '#000';
-    sctx.fillRect(0,0,w,h);
+  <section class="projects">
+    <!-- Live Projects with Thumbnails -->
+    <div class="card">
+      <a href="knowledge/" target="_blank">
+        <img src="images/knowledge.png" alt="Knowledge Map" class="card-img">
+      </a>
+      <h2>🧠 Knowledge Map</h2>
+      <p>
+        An interactive force-directed graph that visualizes some of the books, courses, and topics 
+        as connected nodes that I skimmed through. Users can explore clusters by domain and search through the 
+        knowledge network dynamically.
+      </p>
+      <a href="knowledge/" target="_blank">View Demo</a> |
+      <a href="https://github.com/traceformula/traceformula.github.io" target="_blank">Source Code</a>
+    </div>
 
-    // several layers of stars
-    function drawStars(count, sizeRange, alphaRange) {
-      for(let i=0;i<count;i++){
-        const x = Math.random()*w;
-        const y = Math.random()*h;
-        const r = sizeRange[0] + Math.random()*(sizeRange[1]-sizeRange[0]);
-        const a = alphaRange[0] + Math.random()*(alphaRange[1]-alphaRange[0]);
-        const g = sctx.createRadialGradient(x,y,0,x,y,r*2);
-        g.addColorStop(0, `rgba(255,255,255,${a})`);
-        g.addColorStop(1, `rgba(255,255,255,0)`);
-        sctx.fillStyle = g;
-        sctx.beginPath();
-        sctx.arc(x,y,r*1.6,0,Math.PI*2);
-        sctx.fill();
-      }
-    }
-    drawStars(Math.round(300 * Math.min(innerWidth/1400,1)), [0.2,1.1], [0.06,0.18]);
-    drawStars(Math.round(80 * Math.min(innerWidth/1400,1)), [1.2,2.6], [0.11,0.28]);
-    // a few bright ones
-    drawStars(18, [2.6,4.6], [0.35,0.9]);
-  }
-  buildStars();
-  window.addEventListener('resize', buildStars);
+    <div class="card">
+      <a href="/constellations" target="_blank">
+        <img src="images/constellations.png" alt="Constellations" class="card-img">
+      </a>
+      <h2>✨ Constellations</h2>
+      <p>
+        An interactive starfield visualization that draws constellations dynamically 
+        using JavaScript and Canvas. Explore celestial patterns and enjoy a 
+        real-time stargazing experience in your browser.
+      </p>
+      <a href="/constellations" target="_blank">View Demo</a> |
+      <a href="https://github.com/traceformula/traceformula.github.io" target="_blank">Source Code</a>
+    </div>
 
-  // view transform helpers
-  let view = {
-    cx: innerWidth/2,
-    cy: innerHeight/2,
-    zoom: 1.0
-  };
+    <div class="card">
+      <a href="solar" target="_blank">
+        <img src="images/solar.png" alt="Space Simulation" class="card-img">
+      </a>
+      <h2>🌌 Solar System Simulation</h2>
+      <p>An interactive solar system built with JavaScript and HTML5 Canvas, featuring planets, tilted elliptical orbits, and comets.</p>
+      <a href="solar" target="_blank">View Demo</a> |
+      <a href="https://github.com/traceformula/traceformula.github.io" target="_blank">Source Code</a>
+    </div>
 
-  // interactivity: pan/zoom and click to focus
-  let isDragging = false;
-  let lastPos = null;
-  canvas.addEventListener('pointerdown', (e) => {
-    isDragging = true;
-    lastPos = {x:e.clientX, y:e.clientY};
-    canvas.setPointerCapture(e.pointerId);
-  });
-  canvas.addEventListener('pointermove', (e) => {
-    if (isDragging && lastPos) {
-      const dx = (e.clientX - lastPos.x);
-      const dy = (e.clientY - lastPos.y);
-      view.cx += dx;
-      view.cy += dy;
-      lastPos = {x:e.clientX, y:e.clientY};
-    }
-  });
-  canvas.addEventListener('pointerup', (e) => {
-    isDragging = false;
-    lastPos = null;
-  });
-  canvas.addEventListener('wheel', (e) => {
-    e.preventDefault();
-    const delta = -e.deltaY * (window.navigator.platform.includes('Win') ? 0.002 : 0.004);
-    const oldZoom = view.zoom;
-    view.zoom = Math.min(2.5, Math.max(0.35, view.zoom * (1 + delta)));
-    // zoom to mouse pos: adjust center so point under cursor stays put
-    const mx = e.clientX;
-    const my = e.clientY;
-    const sx = (mx - view.cx) / oldZoom;
-    const sy = (my - view.cy) / oldZoom;
-    view.cx = mx - sx * view.zoom;
-    view.cy = my - sy * view.zoom;
-  }, { passive: false });
+    <div class="card">
+      <a href="srs" target="_blank">
+        <img src="images/srs.png" alt="SRS Tool" class="card-img">
+      </a>
+      <h2>📚 SRS Tool</h2>
+      <p>A simplified spaced repetition system inspired by Anki, helping users memorize information efficiently. Uses <strong>Firebase</strong> as the backend for storing user data and progress.</p>
+      <a href="srs" target="_blank">View Demo</a> |
+      <a href="https://github.com/traceformula/srs" target="_blank">Source Code</a>
+    </div>
 
-  // click to focus a planet
-  canvas.addEventListener('click', (e) => {
-    const mx = (e.clientX - view.cx) / view.zoom;
-    const my = (e.clientY - view.cy) / view.zoom;
-    // check planets
-    for (let p of planets) {
-      const px = canvasCoordForPlanet(p).x;
-      const py = canvasCoordForPlanet(p).y;
-      const pr = p.radius;
-      const dx = (mx - px);
-      const dy = (my - py);
-      if (Math.sqrt(dx*dx + dy*dy) <= pr * 1.05) {
-        scene.focus = p;
-        return;
-      }
-    }
-    scene.focus = null;
-  });
+    <div class="card">
+      <a href="jpython" target="_blank">
+        <img src="images/jpython.png" alt="JPython" class="card-img">
+      </a>
+      <h2>🐍 JPython</h2>
+      <p>A Python interpreter built in JavaScript that runs directly in your browser, allowing you to experiment with Python code without installation.</p>
+      <a href="jpython" target="_blank">View Demo</a> |
+      <a href="https://github.com/traceformula/traceformula.github.io" target="_blank">Source Code</a>
+    </div>
 
-  // UI controls
-  document.getElementById('toggleOrbits').addEventListener('click', () => {
-    scene.showOrbits = !scene.showOrbits;
-  });
-  document.getElementById('toggleLabels').addEventListener('click', () => {
-    scene.showLabels = !scene.showLabels;
-  });
-  document.getElementById('speedUp').addEventListener('click', () => {
-    scene.speed *= 1.6;
-  });
-  document.getElementById('speedDown').addEventListener('click', () => {
-    scene.speed /= 1.6;
-  });
-  document.getElementById('regen').addEventListener('click', () => {
-    buildPlanets();
-  });
+    <div class="card">
+      <a href="gameoflife" target="_blank">
+        <img src="images/gameoflife.png" alt="Game of Life" class="card-img">
+      </a>
+      <h2>🟩 Game of Life</h2>
+      <p>A browser-based implementation of Conway's Game of Life, demonstrating cellular automata rules, dynamic patterns, and algorithmic thinking with JavaScript.</p>
+      <a href="gameoflife" target="_blank">View Demo</a> |
+      <a href="https://github.com/traceformula/traceformula.github.io" target="_blank">Source Code</a>
+    </div>
 
-  // helper: map orbital position to canvas coords (without view transform)
-  function canvasCoordForPlanet(p) {
-    // center is sun at (0,0) in scene coordinates
-    const baseX = 0;
-    const baseY = 0;
-    const orbitalRadius = p.dist;
-    const angle = (scene.time / p.orbitalPeriod) * Math.PI * 2 * scene.speed + p.angleOffset;
-    const x = baseX + Math.cos(angle) * orbitalRadius;
-    const y = baseY + Math.sin(angle) * orbitalRadius * 0.9; // slight ellipse
-    return {x, y, angle};
-  }
+    <div class="card">
+      <a href="latex" target="_blank">
+        <img src="images/latex.png" alt="LaTeX Visualizer" class="card-img">
+      </a>
+      <h2>📝 LaTeX Visualizer</h2>
+      <p>A simple LaTeX tool that allows users to write LaTeX code, instantly visualize the rendered output in the browser, and download it as a PDF.</p>
+      <a href="latex" target="_blank">View Demo</a> |
+      <a href="https://github.com/traceformula/traceformula.github.io" target="_blank">Source Code</a>
+    </div>
 
-  // ================== CONSTELLATIONS ==================
-  const constellations = [
-    // Top-left
-    {
-      name: "Orion",
-      stars: [
-        {x: -320, y: -200}, {x: -300, y: -170}, {x: -330, y: -140},
-        {x: -280, y: -120}, {x: -260, y: -150}, {x: -240, y: -180}
-      ],
-      lines: [[0,1],[1,3],[2,1],[3,4],[4,5]],
-      link: "https://en.wikipedia.org/wiki/Orion_(constellation)",
-      tooltip: "Orion — The Hunter"
-    },
-    // Top-right
-    {
-      name: "Ursa Major",
-      stars: [
-        {x: 260, y: -220}, {x: 280, y: -200}, {x: 300, y: -180},
-        {x: 320, y: -160}, {x: 300, y: -140}, {x: 280, y: -160}, {x: 260, y: -180}
-      ],
-      lines: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6]],
-      link: "https://en.wikipedia.org/wiki/Ursa_Major",
-      tooltip: "Ursa Major — The Great Bear"
-    },
-    // Bottom-left
-    {
-      name: "Cassiopeia",
-      stars: [
-        {x: -320, y: 200}, {x: -290, y: 180}, {x: -260, y: 210},
-        {x: -230, y: 190}, {x: -200, y: 220}
-      ],
-      lines: [[0,1],[1,2],[2,3],[3,4]],
-      link: "https://en.wikipedia.org/wiki/Cassiopeia_(constellation)",
-      tooltip: "Cassiopeia — The Queen"
-    },
-    // Bottom-right
-    {
-      name: "Cygnus",
-      stars: [
-        {x: 220, y: 200}, {x: 240, y: 170}, {x: 260, y: 140},
-        {x: 280, y: 110}, {x: 300, y: 80}, {x: 320, y: 100}
-      ],
-      lines: [[0,1],[1,2],[2,3],[3,4],[2,5]],
-      link: "https://en.wikipedia.org/wiki/Cygnus_(constellation)",
-      tooltip: "Cygnus — The Swan"
-    },
-    // Top
-    {
-      name: "Lyra",
-      stars: [
-        {x: -60, y: -260}, {x: -40, y: -240}, {x: -20, y: -260},
-        {x: -30, y: -280}, {x: -50, y: -280}
-      ],
-      lines: [[0,1],[1,2],[2,3],[3,4],[4,0]],
-      link: "https://en.wikipedia.org/wiki/Lyra",
-      tooltip: "Lyra — The Lyre"
-    },
-    // Bottom
-    {
-      name: "Scorpius",
-      stars: [
-        {x: 0, y: 260}, {x: 20, y: 240}, {x: 40, y: 220},
-        {x: 60, y: 200}, {x: 80, y: 180}, {x: 70, y: 160}, {x: 50, y: 140}
-      ],
-      lines: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6]],
-      link: "https://en.wikipedia.org/wiki/Scorpius",
-      tooltip: "Scorpius — The Scorpion"
-    },
-    // Left side
-    {
-      name: "Leo",
-      stars: [
-        {x: -300, y: 0}, {x: -270, y: 20}, {x: -240, y: 40},
-        {x: -220, y: 20}, {x: -200, y: 0}, {x: -220, y: -20}
-      ],
-      lines: [[0,1],[1,2],[2,3],[3,4],[2,5]],
-      link: "https://en.wikipedia.org/wiki/Leo_(constellation)",
-      tooltip: "Leo — The Lion"
-    },
-    // Right side
-    {
-      name: "Taurus",
-      stars: [
-        {x: 300, y: 0}, {x: 320, y: 30}, {x: 340, y: 10},
-        {x: 360, y: -10}, {x: 380, y: -30}
-      ],
-      lines: [[0,1],[1,2],[2,3],[3,4]],
-      link: "https://en.wikipedia.org/wiki/Taurus_(constellation)",
-      tooltip: "Taurus — The Bull"
-    },
-    // Above right
-    {
-      name: "Gemini",
-      stars: [
-        {x: 160, y: -240}, {x: 180, y: -260}, {x: 200, y: -280},
-        {x: 220, y: -260}, {x: 240, y: -240}
-      ],
-      lines: [[0,1],[1,2],[2,3],[3,4]],
-      link: "https://en.wikipedia.org/wiki/Gemini_(constellation)",
-      tooltip: "Gemini — The Twins"
-    },
-    // Above left
-    {
-      name: "Aquarius",
-      stars: [
-        {x: -160, y: -240}, {x: -140, y: -220}, {x: -120, y: -200},
-        {x: -100, y: -220}, {x: -80, y: -240}
-      ],
-      lines: [[0,1],[1,2],[2,3],[3,4]],
-      link: "https://en.wikipedia.org/wiki/Aquarius_(constellation)",
-      tooltip: "Aquarius — The Water Bearer"
-    },
-    // Below right
-    {
-      name: "Sagittarius",
-      stars: [
-        {x: 160, y: 240}, {x: 180, y: 260}, {x: 200, y: 280},
-        {x: 220, y: 260}, {x: 240, y: 240}
-      ],
-      lines: [[0,1],[1,2],[2,3],[3,4]],
-      link: "https://en.wikipedia.org/wiki/Sagittarius_(constellation)",
-      tooltip: "Sagittarius — The Archer"
-    },
-    // Below left
-    {
-      name: "Ursa Minor",
-      stars: [
-        {x: -160, y: 240}, {x: -140, y: 260}, {x: -120, y: 280},
-        {x: -100, y: 300}, {x: -80, y: 320}, {x: -100, y: 340}, {x: -120, y: 360}
-      ],
-      lines: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6]],
-      link: "https://en.wikipedia.org/wiki/Ursa_Minor",
-      tooltip: "Ursa Minor — The Little Bear"
-    }
-  ];
+    <div class="card">
+      <h2>🤖 Machine Learning Project (Coming Soon)</h2>
+      <p>A project demonstrating applied ML models, experiments, and real-world use cases.</p>
+      <a href="#">Demo</a> | <a href="#">Source Code</a>
+    </div>
+  </section>
 
-  let hoveredConstellation = null;
-  let glowPhase = 0;
-  let mousePos = {x:0,y:0};
-
-  // Track mouse
-  canvas.addEventListener("mousemove", (e) => {
-    mousePos = {x: e.clientX, y: e.clientY};
-    hoveredConstellation = null;
-
-    // Transform mouse to scene coords
-    const mx = (e.clientX - view.cx) / view.zoom;
-    const my = (e.clientY - view.cy) / view.zoom;
-
-    for (let c of constellations) {
-      for (let star of c.stars) {
-        const dx = mx - star.x;
-        const dy = my - star.y;
-        if (Math.sqrt(dx*dx + dy*dy) < 10) {
-          hoveredConstellation = c;
-          return;
-        }
-      }
-    }
-  });
-
-  canvas.addEventListener("click", () => {
-    if (hoveredConstellation) {
-      window.open(hoveredConstellation.link, "_blank");
-    }
-  });
-
-  // ================== RENDER LOOP ==================
-  let lastT = performance.now();
-  function render(now) {
-    const dt = (now - lastT) / 1000;
-    lastT = now;
-    scene.time += dt * 60 * scene.speed; // accelerate time: 60 tick multiplier for visual pacing
-
-    // clear background using pre-rendered stars
-    ctx.save();
-    ctx.setTransform(1,0,0,1,0,0);
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    // draw starCanvas scaled down by DPR
-    ctx.drawImage(starCanvas, 0,0, canvas.width / DPR, canvas.height / DPR);
-    ctx.restore();
-
-    // apply view transform
-    ctx.save();
-    ctx.translate(view.cx, view.cy);
-    ctx.scale(view.zoom, view.zoom);
-
-    // optionally focus on a planet
-    if (scene.focus) {
-      // slowly move view center toward the planet
-      const pcoord = canvasCoordForPlanet(scene.focus);
-      // transform to screen coordinates (scene space)
-      const targetX = -pcoord.x * view.zoom + innerWidth/2;
-      const targetY = -pcoord.y * view.zoom + innerHeight/2;
-      // Actually for simplicity, we just set pan such that the planet centers in the view
-      // We'll animate smoothly:
-      view.cx += (innerWidth/2 - (view.cx + pcoord.x * view.zoom)) * 0.08;
-      view.cy += (innerHeight/2 - (view.cy + pcoord.y * view.zoom)) * 0.08;
-    }
-
-    // draw sun at origin
-    const sunX = 0, sunY = 0;
-    // sun glow
-    const sunRadius = 48;
-    const g = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunRadius*6);
-    g.addColorStop(0, 'rgba(255,240,200,0.95)');
-    g.addColorStop(0.15, 'rgba(255,200,80,0.6)');
-    g.addColorStop(0.45, 'rgba(255,140,40,0.15)');
-    g.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.arc(sunX, sunY, sunRadius*6, 0, Math.PI*2);
-    ctx.fill();
-
-    // sun body
-    const sunGradient = ctx.createRadialGradient(sunX - sunRadius*0.2, sunY - sunRadius*0.2, sunRadius*0.1, sunX, sunY, sunRadius);
-    sunGradient.addColorStop(0, '#fff7d8');
-    sunGradient.addColorStop(0.5, '#ffd37a');
-    sunGradient.addColorStop(1, '#ff9e2a');
-    ctx.fillStyle = sunGradient;
-    ctx.beginPath();
-    ctx.arc(sunX, sunY, sunRadius, 0, Math.PI*2);
-    ctx.fill();
-
-    // small animated solar flares (subtle)
-    ctx.globalCompositeOperation = 'lighter';
-    for (let i=0;i<6;i++){
-      const a = (now/600 + i)*1.3 % (Math.PI*2);
-      const rx = Math.cos(a) * (sunRadius*0.6 + i*2);
-      const ry = Math.sin(a) * (sunRadius*0.4 + i*1.6);
-      ctx.beginPath();
-      ctx.ellipse(sunX + rx, sunY + ry, sunRadius*0.6, sunRadius*0.3, a, 0, Math.PI*2);
-      ctx.fillStyle = `rgba(255,230,180,${0.01 + i*0.006})`;
-      ctx.fill();
-    }
-    ctx.globalCompositeOperation = 'source-over';
-
-    // draw orbits
-    if (scene.showOrbits) {
-      ctx.strokeStyle = 'rgba(255,255,255,0.03)';
-      ctx.lineWidth = 1 / view.zoom;
-      for (let p of planets) {
-        ctx.beginPath();
-        ctx.ellipse(0,0, p.dist, p.dist*0.9, 0, 0, Math.PI*2);
-        ctx.stroke();
-      }
-    }
-
-    // === Draw constellations ===
-    glowPhase = (glowPhase + dt * 1.5) % (Math.PI * 2);  // ~1.5 cycles per second
-    const glowValue = (Math.sin(glowPhase) * 0.5 + 0.5); // range 0 → 1
-    for (let c of constellations) {
-      const isHover = (c === hoveredConstellation);
-
-      // glow factor for idle state (0.1–0.4 alpha)
-      const idleAlpha = 0.1 + glowValue * 0.3;
-
-      // lines (much dimmer unless hovered)
-      ctx.strokeStyle = isHover ? "rgba(255,255,180,0.7)" : `rgba(255,255,255,${idleAlpha})`;
-      ctx.lineWidth = 1 / view.zoom;
-      ctx.beginPath();
-      for (let [i,j] of c.lines) {
-        ctx.moveTo(c.stars[i].x, c.stars[i].y);
-        ctx.lineTo(c.stars[j].x, c.stars[j].y);
-      }
-      ctx.stroke();
-
-      // stars (smaller + dimmer unless hovered)
-      for (let star of c.stars) {
-        ctx.beginPath();
-        ctx.arc(star.x, star.y, isHover ? 4/view.zoom : 1.6/view.zoom, 0, Math.PI*2);
-        ctx.fillStyle = isHover ? "rgba(255,255,200,0.9)" : `rgba(220,220,220,${idleAlpha})`;
-        ctx.fill();
-      }
-    }
-
-    // tooltip
-    if (hoveredConstellation) {
-      ctx.save();
-      ctx.resetTransform();
-      ctx.font = "13px Inter, sans-serif";
-      ctx.fillStyle = "rgba(0,0,0,0.7)";
-      const pad = 6;
-      const text = hoveredConstellation.tooltip;
-      const metrics = ctx.measureText(text);
-      const tw = metrics.width + pad*2;
-      const th = 20;
-      ctx.fillRect(mousePos.x+12, mousePos.y-10, tw, th);
-      ctx.fillStyle = "#fff";
-      ctx.fillText(text, mousePos.x+12+pad, mousePos.y+5);
-      ctx.restore();
-    }
-
-    // === draw planets (sorted by distance) ===
-    const sorted = planets.slice().sort((a,b)=>a.dist - b.dist);
-    for (let p of sorted) {
-      const coord = canvasCoordForPlanet(p);
-      const sx = coord.x;
-      const sy = coord.y;
-      const rad = p.radius;
-
-      // draw shadow (faint)
-      ctx.beginPath();
-      ctx.fillStyle = 'rgba(0,0,0,0.07)';
-      ctx.ellipse(sx + rad*0.14, sy + rad*0.14, rad*1.1, rad*0.9, 0, 0, Math.PI*2);
-      ctx.fill();
-
-      // planet texture from offscreen canvas
-      const tex = p.texture.canvas;
-      if (tex) {
-        // draw circle mask
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(sx, sy, rad, 0, Math.PI*2);
-        ctx.clip();
-        // draw texture centered and scaled to diameter
-        ctx.drawImage(tex, sx - rad, sy - rad, rad*2, rad*2);
-
-        // subtle rotation of texture to simulate rotation (use seed to vary speed)
-        ctx.restore();
-      } else {
-        // fallback: colored circle
-        ctx.beginPath();
-        ctx.fillStyle = '#666';
-        ctx.arc(sx, sy, rad, 0, Math.PI*2);
-        ctx.fill();
-      }
-
-      // rings (for Saturn-like)
-      if (p.rings) {
-        ctx.save();
-        ctx.translate(sx, sy);
-        ctx.rotate(0.28);
-        ctx.beginPath();
-        ctx.ellipse(0,0, rad*2.8, rad*1.0, 0, 0, Math.PI*2);
-        ctx.strokeStyle = 'rgba(210,180,140,0.28)';
-        ctx.lineWidth = Math.max(1, rad*0.28);
-        ctx.stroke();
-        ctx.restore();
-      }
-
-      // label
-      if (scene.showLabels) {
-        ctx.font = `${12 / view.zoom}px Inter, system-ui, sans-serif`;
-        ctx.fillStyle = 'rgba(220,220,220,0.9)';
-        ctx.textAlign = 'center';
-        ctx.fillText(p.name, sx, sy + rad + 14 / view.zoom);
-      }
-    }
-
-    // small HUD: scale bar and legend
-    ctx.restore();
-
-    // subtle vignette
-    ctx.save();
-    ctx.fillStyle = 'rgba(0,0,0,0.05)';
-    const vgrad = ctx.createRadialGradient(innerWidth/2, innerHeight/2, Math.min(innerWidth,innerHeight)*0.2, innerWidth/2, innerHeight/2, Math.max(innerWidth,innerHeight));
-    vgrad.addColorStop(0, 'rgba(0,0,0,0)');
-    vgrad.addColorStop(1, 'rgba(0,0,0,0.45)');
-    ctx.fillStyle = vgrad;
-    ctx.fillRect(0,0,innerWidth,innerHeight);
-    ctx.restore();
-
-    requestAnimationFrame(render);
-  }
-
-  requestAnimationFrame(render);
-
-  // small accessibility: show pointer coordinates when hovering (optional)
-  // nothing else required
-
-  // initial pan center
-  view.cx = innerWidth/2;
-  view.cy = innerHeight/2;
-
-})(); // end IIFE
-</script>
+  <footer>
+    © 2025 Thanh Nguyen — <a href="https://github.com/traceformula" style="color:#fff;">GitHub</a> 
+    | <a href="mailto:thanhtiennguyen2810@gmail.com" style="color:#fff;">Contact</a>
+  </footer>
 </body>
 </html>

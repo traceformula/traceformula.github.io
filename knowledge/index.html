@@ -46,7 +46,7 @@
   <header>
     <div class="title">🗺️ Global Knowledge Map</div>
     <div class="controls">
-      <input id="search" class="search" placeholder="Search a topic or source (e.g., 'aws', 'EC2', book title)…" />
+      <input id="search" class="search" placeholder="Search a topic or source (e.g., 'Redis', 'aws', 'EC2', book title)…" />
       <select id="filter">
         <option value="all">All nodes</option>
         <option value="topic">Topics only</option>
@@ -55,7 +55,7 @@
       </select>
       <button id="fit">Fit</button>
       <div class="legend-note">
-        Legend (for colors only, not clickable):  
+        Color Representation of Nodes:  
         <span class="pill" style="color:#6aa5ff">● topic</span>
         <span class="pill" style="color:#92e6a7">● book</span>
         <span class="pill" style="color:#ffd166">● course</span>
@@ -188,8 +188,8 @@
       if(d.description) html += `<br><i>${d.description}</i>`;
     }
     tooltip.style("display","block")
-      .style("left", (ev.pageX + 12) + "px")
-      .style("top", (ev.pageY + 12) + "px")
+      .style("left", (ev.pageX +5) + "px")
+      .style("top", (ev.pageY +5) + "px")
       .html(html);
   }
   function hideTip(){ tooltip.style("display","none"); }
