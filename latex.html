@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LaTeX Editor with PDF Export</title>
+    <!-- Include MathJax -->
+    <script type="text/javascript" async
+        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML">
+    </script>
+    <!-- Include html2pdf.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            margin-bottom: 20px;
+            resize: none;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        #output {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            width: 100%;
+            min-height: 100px;
+            box-sizing: border-box;
+            white-space: pre-wrap;
+        }
+
+        /* Hide output from screen readers */
+        #output[aria-hidden="true"] {
+            display: none;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        #pdfButton {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #pdfButton:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>LaTeX Editor</h1>
+        <p>Type LaTeX below to see your equation rendered:</p>
+
+        <!-- Textarea for input -->
+        <textarea id="latexInput" placeholder="Type LaTeX code here...">
+Let \( f(x) \) be a continuous function on \( [a, b] \), and let \( g(x) \) be a differentiable function on \( [a, b] \). Consider the following series:
+
+\[
+S = \sum_{n=1}^{\infty} \frac{(-1)^n}{n^2}
+\]
+
+and the integral
+
+\[
+I = \int_a^b f(x) g'(x) \, dx.
+\]
+
+Then we have the following identity:
+
+\[
+I = \sum_{n=1}^{\infty} \left( \int_a^b f(x) g_n(x) \, dx \right)
+\]
+where \( g_n(x) = \frac{(-1)^n}{n^2} g(x) \).
+
+\[{PROOF}\]
+We begin by considering the definition of the series:
+
+\[
+S = \sum_{n=1}^{\infty} \frac{(-1)^n}{n^2}.
+\]
+
+This is a convergent series, and we aim to evaluate the corresponding integral. First, observe that \( g_n(x) \) can be written as:
+
+\[
+g_n(x) = \frac{(-1)^n}{n^2} g(x),
+\]
+so the sum can be rewritten as:
+
+\[
+I = \int_a^b f(x) g'(x) \, dx = \sum_{n=1}^{\infty} \int_a^b f(x) g_n(x) \, dx.
+\]
+
+Now, using the fact that the sum and integral can be interchanged for a convergent series:
+
+\[
+\sum_{n=1}^{\infty} \int_a^b f(x) g_n(x) \, dx = \sum_{n=1}^{\infty} \int_a^b f(x) \frac{(-1)^n}{n^2} g(x) \, dx.
+\]
+
+Next, we consider the matrix representation of the series. For each \( n \), define a matrix \( A_n \) whose entries are given by:
+
+\[
+A_n = \left[ \begin{array}{cc} 
+\frac{(-1)^n}{n^2} & 0 \\ 
+0 & \frac{(-1)^n}{n^2} 
+\end{array} \right].
+\]
+
+Thus, the integral becomes:
+
+\[
+I = \int_a^b f(x) g'(x) \, dx = \sum_{n=1}^{\infty} \text{Tr}(A_n \cdot B),
+\]
+where \( B \) is a matrix representing the function \( f(x) \).
+
+Finally, we conclude the proof by noting that the matrix sum converges and that the integral expression \( I \) is equivalent to the series:
+
+\[
+I = \sum_{n=1}^{\infty} \left( \int_a^b f(x) g_n(x) \, dx \right),
+\]
+as required.
+
+        </textarea>
+
+        <!-- Output container for rendered LaTeX -->
+        <div id="output"></div>
+
+        <!-- Button to save as PDF -->
+        <button id="pdfButton">Save as PDF</button>
+    </div>
+    <script>
+        // Check if MathJax is fully loaded before proceeding
+        window.onload = function() {
+            if (typeof MathJax !== "undefined") {
+                // MathJax is loaded and ready
+                console.log("MathJax loaded successfully");
+
+                // Function to update the output
+                function updateOutput() {
+                    const latexInput = document.getElementById('latexInput').value;
+
+                    // Clear previous content to avoid duplicate rendering
+                    const output = document.getElementById('output');
+                    output.innerHTML = ''; // Clear the content
+
+                    // Set the LaTeX code into the output container
+                    output.innerHTML = `${latexInput}`;
+
+                    // Ensure that MathJax renders the LaTeX
+                    MathJax.Hub.Queue(["Typeset", MathJax.Hub, "output"]);
+                }
+
+                // Event listener for textarea input
+                document.getElementById('latexInput').addEventListener('input', updateOutput);
+
+                // Initial call to render default content (if any)
+                updateOutput();
+
+                // Event listener for the "Save as PDF" button
+                document.getElementById('pdfButton').addEventListener('click', function() {
+                    const element = document.getElementById('output');
+
+                    // Ensure MathJax finishes rendering before capturing the element for PDF export
+                    MathJax.Hub.Queue(function() {
+                        setTimeout(function() {
+                            // Temporarily remove the aria-hidden attribute to allow for PDF capture
+                            element.removeAttribute('aria-hidden');
+
+                            // Generate PDF
+                            html2pdf()
+                                .from(element)         // Specify the HTML element to convert
+                                .toPdf()
+                                .get('pdf')            // Get the PDF object
+                                .then(function (pdf) {
+                                    // Optional: Customize the PDF metadata here if needed
+                                    pdf.setProperties({
+                                        title: 'LaTeX Equation',
+                                        subject: 'Exported LaTeX Equation as PDF'
+                                    });
+                                    // Save the PDF file
+                                    pdf.save('latex_equation.pdf');
+                                });
+
+                            // Add the aria-hidden attribute back after PDF export
+                            //element.setAttribute('aria-hidden', 'true');
+                        }, 500);  // Delay to ensure MathJax rendering is complete
+                    });
+                });
+            } else {
+                console.log("MathJax failed to load.");
+            }
+        };
+    </script>
+
+</body>
+</html>
