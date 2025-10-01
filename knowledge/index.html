@@ -83,7 +83,21 @@
     });
 
   function colorFor(d){
-    if(d.kind === "topic") return "#6aa5ff";
+    if(d.kind === "topic"){
+      switch(d.domain){
+        case "Cloud": return "#4cc9f0";
+        case "Programming": return "#f72585";
+        case "Data": return "#4361ee";
+        case "Machine Learning": return "#ffb703";
+        case "DevOps": return "#06d6a0";
+        case "Security": return "#ff006e";
+        case "Networking": return "#8338ec";
+        case "Finance": return "#fb5607";
+        case "Systems": return "#3a86ff";
+        case "Algorithms": return "#8ac926";
+        default: return "#6aa5ff";
+      }
+    }
     if(d.sourceType === "book") return "#92e6a7";
     if(d.sourceType === "course") return "#ffd166";
     return "#cccccc";
@@ -210,7 +224,7 @@
     d.fx = null;
     d.fy = null;
   }
-
+/*
   function onSearch(ev){
     const q = ev.target.value.trim().toLowerCase();
     if(!q){
@@ -220,10 +234,56 @@
     }
     nodeSel.classed("highlight", d => (d.topic?.toLowerCase().includes(q)) || (d.title?.toLowerCase().includes(q)));
     linkSel.classed("highlight", l => {
-      const s = (l.source.title || l.source.topic || "").toLowerCase();
-      const t = (l.target.title || l.target.topic || "").toLowerCase();
+      const sNode = l.source.id ? l.source : data.nodes.find(n => n.id === l.source);
+      const tNode = l.target.id ? l.target : data.nodes.find(n => n.id === l.target);
+      const s = (sNode.title || sNode.topic || "").toLowerCase();
+      const t = (tNode.title || tNode.topic || "").toLowerCase();
       return s.includes(q) || t.includes(q);
+      console.log(JSON.stringify(l));
     });
+  }
+*/
+
+  function onSearch(ev){
+    const q = ev.target.value.trim().toLowerCase();
+    if(!q){
+      // reset → show everything again
+      nodeSel.style("display", null).classed("highlight", false);
+      linkSel.style("display", null).classed("highlight", false);
+      return;
+    }
+
+    // find nodes that match query
+    const matchedNodes = new Set(
+      data.nodes.filter(d =>
+        (d.topic && d.topic.toLowerCase().includes(q)) ||
+        (d.title && d.title.toLowerCase().includes(q))
+      ).map(d => d.id)
+    );
+
+    // find links that connect to matched nodes
+    const matchedLinks = new Set(
+      data.links.filter(l =>
+        matchedNodes.has(l.source.id ? l.source.id : l.source) ||
+        matchedNodes.has(l.target.id ? l.target.id : l.target)
+      )
+    );
+
+    // show only matched nodes + their neighbors
+    nodeSel.style("display", d =>
+      matchedNodes.has(d.id) ||
+      data.links.some(l =>
+        (l.source.id ? l.source.id : l.source) === d.id && matchedNodes.has(l.target.id ? l.target.id : l.target) ||
+        (l.target.id ? l.target.id : l.target) === d.id && matchedNodes.has(l.source.id ? l.source.id : l.source)
+      )
+        ? null
+        : "none"
+    );
+
+    // show only links connected to matches
+    linkSel.style("display", l =>
+      matchedLinks.has(l) ? null : "none"
+    );
   }
 
   function onFilter(ev){
