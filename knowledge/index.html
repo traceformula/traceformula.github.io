@@ -13,6 +13,16 @@
     input, select { background: #111833; color: #e6e6e6; border: 1px solid #253058; border-radius: 10px; padding: 8px 10px; outline: none; }
     input:focus { border-color: #6aa5ff; box-shadow: 0 0 0 3px rgba(106,165,255,0.2); }
     .legend { display:flex; gap: 10px; align-items:center; font-size: 12px; opacity:.9 }
+    .legend-note {
+      font-size: 12px;
+      opacity: 0.8;
+      margin-left: 10px;
+    }
+    .legend-note .pill {
+      cursor: default;      /* no pointer hand */
+      user-select: none;    /* can’t accidentally select text */
+      background: rgba(255,255,255,0.05);
+    }
     .pill { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border:1px solid #253058; border-radius:999px; }
     .wrap { height: calc(100% - 96px); }
     #graph { width: 100%; height: 100%; display: block; }
@@ -44,7 +54,8 @@
         <option value="course">Courses only</option>
       </select>
       <button id="fit">Fit</button>
-      <div class="legend">
+      <div class="legend-note">
+        Legend (for colors only, not clickable):  
         <span class="pill" style="color:#6aa5ff">● topic</span>
         <span class="pill" style="color:#92e6a7">● book</span>
         <span class="pill" style="color:#ffd166">● course</span>
@@ -224,44 +235,40 @@
     d.fx = null;
     d.fy = null;
   }
-/*
-  function onSearch(ev){
-    const q = ev.target.value.trim().toLowerCase();
-    if(!q){
-      nodeSel.classed("highlight", false);
-      linkSel.classed("highlight", false);
-      return;
-    }
-    nodeSel.classed("highlight", d => (d.topic?.toLowerCase().includes(q)) || (d.title?.toLowerCase().includes(q)));
-    linkSel.classed("highlight", l => {
-      const sNode = l.source.id ? l.source : data.nodes.find(n => n.id === l.source);
-      const tNode = l.target.id ? l.target : data.nodes.find(n => n.id === l.target);
-      const s = (sNode.title || sNode.topic || "").toLowerCase();
-      const t = (tNode.title || tNode.topic || "").toLowerCase();
-      return s.includes(q) || t.includes(q);
-      console.log(JSON.stringify(l));
-    });
-  }
-*/
 
   function onSearch(ev){
     const q = ev.target.value.trim().toLowerCase();
+    const filterVal = document.getElementById("filter").value;
+
+    // helper: check if a node passes the filter
+    function passesFilter(d){
+      if(filterVal === "all") return true;
+      if(filterVal === "topic") return d.kind === "topic";
+      if(filterVal === "book") return d.sourceType === "book";
+      if(filterVal === "course") return d.sourceType === "course";
+      return true;
+    }
+
     if(!q){
-      // reset → show everything again
-      nodeSel.style("display", null).classed("highlight", false);
-      linkSel.style("display", null).classed("highlight", false);
+      // reset → just apply filter, no search
+      nodeSel.style("display", d => passesFilter(d) ? null : "none")
+             .classed("highlight", false);
+      linkSel.style("display", l => {
+        return (passesFilter(l.source) && passesFilter(l.target)) ? null : "none";
+      }).classed("highlight", false);
       return;
     }
 
-    // find nodes that match query
+    // find nodes that match query AND pass filter
     const matchedNodes = new Set(
       data.nodes.filter(d =>
-        (d.topic && d.topic.toLowerCase().includes(q)) ||
-        (d.title && d.title.toLowerCase().includes(q))
+        passesFilter(d) &&
+        ((d.topic && d.topic.toLowerCase().includes(q)) ||
+         (d.title && d.title.toLowerCase().includes(q)))
       ).map(d => d.id)
     );
 
-    // find links that connect to matched nodes
+    // find links that connect to matched nodes (and pass filter)
     const matchedLinks = new Set(
       data.links.filter(l =>
         matchedNodes.has(l.source.id ? l.source.id : l.source) ||
@@ -269,21 +276,17 @@
       )
     );
 
-    // show only matched nodes + their neighbors
+    // show nodes: only matched nodes (and maybe their neighbors if they pass filter)
     nodeSel.style("display", d =>
-      matchedNodes.has(d.id) ||
-      data.links.some(l =>
-        (l.source.id ? l.source.id : l.source) === d.id && matchedNodes.has(l.target.id ? l.target.id : l.target) ||
-        (l.target.id ? l.target.id : l.target) === d.id && matchedNodes.has(l.source.id ? l.source.id : l.source)
-      )
+      matchedNodes.has(d.id)
         ? null
         : "none"
-    );
+    ).classed("highlight", d => matchedNodes.has(d.id));
 
-    // show only links connected to matches
+    // show only links connected to matched nodes
     linkSel.style("display", l =>
       matchedLinks.has(l) ? null : "none"
-    );
+    ).classed("highlight", l => matchedLinks.has(l));
   }
 
   function onFilter(ev){
