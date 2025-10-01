@@ -2,14 +2,97 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Python with Plots on GitHub Pages</title>
-  <script src="https://cdn.jsdelivr.net/pyodide/v0.24.0/full/pyodide.js"></script>
+  <title>Python Runner with Monaco + Pyodide</title>
+
+  <!-- Monaco Editor Styles -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/monaco-editor@0.26.1/min/vs/editor/editor.main.min.css">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+      margin: 20px;
+    }
+    h1 {
+      color: #333;
+    }
+    #editor {
+      width: 100%;
+      height: 400px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    #plot {
+      margin-top: 20px;
+    }
+    p, #status {
+      color: #555;
+    }
+  </style>
 </head>
 <body>
-  <h1>Python with Matplotlib in the Browser!</h1>
-  <textarea id="code" rows="10" cols="60">
-import matplotlib.pyplot as plt
+  <h1>Python Runner on GitHub Pages</h1>
+  <div id="status">Checking browser compatibility...</div>
+  <div id="editor"></div>
+  <button onclick="runPython()">Run Python</button>
+  <p>👉 Open DevTools console to see <code>print()</code> output. Plots will show below:</p>
+  <div id="plot"></div>
+
+  <!-- Monaco Loader -->
+  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.26.1/min/vs/loader.min.js"></script>
+  <!-- Pyodide -->
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.24.0/full/pyodide.js"></script>
+
+  <script>
+    // --- Compatibility & Resource Checks ---
+    function isWebAssemblySupported() {
+      try {
+        if (typeof WebAssembly === "object" &&
+            typeof WebAssembly.instantiate === "function") {
+          const module = new WebAssembly.Module(
+            Uint8Array.from([0x00,0x61,0x73,0x6d,0x01,0x00,0x00,0x00])
+          );
+          return module instanceof WebAssembly.Module &&
+                 new WebAssembly.Instance(module) instanceof WebAssembly.Instance;
+        }
+      } catch (e) { return false; }
+      return false;
+    }
+
+    const statusEl = document.getElementById("status");
+
+    if (!isWebAssemblySupported()) {
+      statusEl.textContent = "❌ Your browser does not support WebAssembly. Pyodide cannot run.";
+      alert("WebAssembly not supported. Please use a modern desktop browser.");
+    } else if (/Mobi|Android/i.test(navigator.userAgent)) {
+      statusEl.textContent = "⚠️ You are on a mobile device. Pyodide may run slowly or crash.";
+    } else {
+      statusEl.textContent = "✅ Browser compatible. Loading Pyodide...";
+    }
+
+    // --- Monaco Editor Setup ---
+    let editor;
+    require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.26.1/min/vs' }});
+    require(['vs/editor/editor.main'], function() {
+      editor = monaco.editor.create(document.getElementById('editor'), {
+        value: `import matplotlib.pyplot as plt
 import numpy as np
+
+print("Hello from Python with Matplotlib!")
 
 x = np.linspace(0, 10, 100)
 y = np.sin(x)
@@ -17,55 +100,72 @@ y = np.sin(x)
 plt.plot(x, y)
 plt.title("Sine Wave")
 plt.xlabel("x")
-plt.ylabel("y")
-plt.show()
-  </textarea>
-  <br>
-  <button onclick="runPython()">Run Python</button>
-  <div id="output"></div>
-
-  <script>
-    let pyodideReadyPromise = loadPyodide({
-      indexURL : "https://cdn.jsdelivr.net/pyodide/v0.24.0/full/"
+plt.ylabel("sin(x)")
+plt.show()`,
+        language: 'python',
+        theme: 'vs-dark',
+        automaticLayout: true
+      });
     });
 
+    // --- Lazy Load Pyodide ---
+    let pyodideReadyPromise;
+    async function loadPyodideLazy() {
+      statusEl.textContent = "⏳ Loading Pyodide...";
+      pyodideReadyPromise = loadPyodide({ indexURL: "https://cdn.jsdelivr.net/pyodide/v0.24.0/full/" });
+      await pyodideReadyPromise;
+      statusEl.textContent = "✅ Pyodide loaded and ready!";
+    }
+    loadPyodideLazy();
+
+    // --- Run Python ---
     async function runPython() {
+      if (!editor || !pyodideReadyPromise) return;
+
+      let code = editor.getValue();
       let pyodide = await pyodideReadyPromise;
-      let code = document.getElementById("code").value;
 
       try {
-        // Load packages dynamically
         await pyodide.loadPackage(["numpy", "matplotlib"]);
-        
-        // Clear previous plots
-        document.getElementById("output").innerHTML = "";
 
-        // Redirect matplotlib output to HTML canvas
+        // Redirect print() to console
         pyodide.runPython(`
-import matplotlib
-matplotlib.use('AGG')
-from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-from matplotlib.figure import Figure
-canvas_dict = {}
-`);
+import sys
+from js import console
+class ConsoleWriter:
+    def write(self, s):
+        if s.strip(): console.log(s)
+    def flush(self): pass
+sys.stdout = ConsoleWriter()
+sys.stderr = ConsoleWriter()
+        `);
 
+        // Clear previous plots
+        document.getElementById("plot").innerHTML = "";
+
+        // Execute user code
         await pyodide.runPythonAsync(code);
 
-        // Convert matplotlib figure to PNG and display
-        let displayScript = `
+        // Capture matplotlib plots if any
+        let imgTag = await pyodide.runPythonAsync(`
+import matplotlib.pyplot as plt
 import io, base64
-buf = io.BytesIO()
-plt.savefig(buf, format='png')
-buf.seek(0)
-img_bytes = base64.b64encode(buf.read()).decode('ascii')
-img_tag = f'<img src="data:image/png;base64,{img_bytes}"/>'
-img_tag
-`;
-        let imgTag = await pyodide.runPythonAsync(displayScript);
-        document.getElementById("output").innerHTML = imgTag;
+if plt.get_fignums():
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png")
+    buf.seek(0)
+    img_bytes = base64.b64encode(buf.read()).decode("ascii")
+    plt.close("all")
+    f"<img src='data:image/png;base64,{img_bytes}'/>"
+else:
+    ""
+        `);
+
+        if (imgTag) document.getElementById("plot").innerHTML = imgTag;
 
       } catch (err) {
-        document.getElementById("output").textContent = err;
+        console.error("Python error:", err);
+        statusEl.textContent = "❌ Python error occurred. Check console.";
       }
     }
   </script>

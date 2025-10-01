@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Python Console Runner</title>
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.24.0/full/pyodide.js"></script>
+</head>
+<body>
+  <h1>Run Python and Print to Console</h1>
+  <textarea id="code" rows="8" cols="60">
+import time
+import matplotlib.pyplot as plt
+import numpy as np
+
+class Test:
+  def run(self):  
+    print("hello", Test)
+
+Test().run()
+
+print("Hello from Python with Matplotlib!")
+
+x = np.linspace(0, 10, 100)
+y = np.sin(x)
+
+plt.plot(x, y)
+plt.title("Sine Wave")
+plt.xlabel("x")
+plt.ylabel("sin(x)")
+plt.show()
+# time.sleep(1)
+print("Done ronnnnnning!")
+  </textarea>
+  <br>
+  <button onclick="runPython()">Run Python</button>
+  <p>👉 Open your browser console to see output (right-click → Inspect → Console)</p>
+
+  <div id="plot"></div>
+  <script>
+    let pyodideReadyPromise = loadPyodide();
+
+    async function runPython() {
+      let pyodide = await pyodideReadyPromise;
+      let code = document.getElementById("code").value;
+
+      try {
+        // Load packages dynamically
+        await pyodide.loadPackage(["numpy", "matplotlib"]);
+
+        // Redirect Python's print() to browser console.log
+        pyodide.runPython(`
+import sys
+from js import console
+
+class ConsoleWriter:
+    def write(self, s):
+        if s.strip():
+            console.log(s)
+    def flush(self): pass
+
+sys.stdout = ConsoleWriter()
+sys.stderr = ConsoleWriter()
+        `);
+
+        // Clear old plot
+        document.getElementById("plot").innerHTML = "";
+
+        // Run user code
+        await pyodide.runPythonAsync(code);
+
+        // If matplotlib was used, capture the figure
+        let imgTag = await pyodide.runPythonAsync(`
+import matplotlib
+matplotlib.use("AGG")
+import matplotlib.pyplot as plt
+import io, base64
+
+# Only save if there is a current figure
+if plt.get_fignums():
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png")
+    buf.seek(0)
+    img_bytes = base64.b64encode(buf.read()).decode("ascii")
+    plt.close("all")
+    f"<img src='data:image/png;base64,{img_bytes}'/>"
+else:
+    ""
+        `);
+
+        if (imgTag) {
+          document.getElementById("plot").innerHTML = imgTag;
+        }
+
+      } catch (err) {
+        console.error("Python error:", err);
+      }
+    }
+
+    runPython();
+  </script>
+</body>
+</html>
