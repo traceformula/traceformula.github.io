@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>My Portfolio</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f9f9f9;
+      color: #333;
+    }
+    header {
+      background: #1e1e2f;
+      color: #fff;
+      padding: 20px;
+      text-align: center;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2.5em;
+    }
+    header p {
+      margin-top: 5px;
+      font-size: 1.2em;
+    }
+    .projects {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      padding: 40px;
+      max-width: 1200px;
+      margin: auto;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      padding: 20px;
+      transition: transform 0.2s ease;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+    }
+    .card h2 {
+      margin-top: 0;
+    }
+    .card a {
+      display: inline-block;
+      margin-top: 10px;
+      color: #0077cc;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .card a:hover {
+      text-decoration: underline;
+    }
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 0.9em;
+      background: #1e1e2f;
+      color: #fff;
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Thanh Nguyen</h1>
+    <p>Software Engineer • Creative Coder • Problem Solver</p>
+  </header>
+
+  <section class="projects">
+    <div class="card">
+      <h2>🌌 Space Simulation</h2>
+      <p>
+        An interactive solar system built with JavaScript and HTML5 Canvas, featuring 
+        planets, tilted elliptical orbits, and comets.
+      </p>
+      <a href="space.html" target="_blank">View Demo</a> |
+      <a href="https://github.com/traceformula/traceformula.github.io" target="_blank">Source Code</a>
+    </div>
+
+    <div class="card">
+      <h2>📊 Data Visualization (Coming Soon)</h2>
+      <p>
+        Interactive charts and dashboards built with D3.js and modern web technologies.
+      </p>
+      <a href="#">Demo</a> | <a href="#">Source Code</a>
+    </div>
+
+    <div class="card">
+      <h2>🤖 Machine Learning Project (Coming Soon)</h2>
+      <p>
+        A project demonstrating applied ML models, experiments, and real-world use cases.
+      </p>
+      <a href="#">Demo</a> | <a href="#">Source Code</a>
+    </div>
+  </section>
+
+  <footer>
+    © 2025 Thanh Nguyen — <a href="https://github.com/traceformula" style="color:#fff;">GitHub</a> 
+    | <a href="mailto:your.email@example.com" style="color:#fff;">Contact</a>
+  </footer>
+</body>
+</html>

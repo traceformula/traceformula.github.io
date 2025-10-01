@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Python with Plots on GitHub Pages</title>
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.24.0/full/pyodide.js"></script>
+</head>
+<body>
+  <h1>Python with Matplotlib in the Browser!</h1>
+  <textarea id="code" rows="10" cols="60">
+import matplotlib.pyplot as plt
+import numpy as np
+
+x = np.linspace(0, 10, 100)
+y = np.sin(x)
+
+plt.plot(x, y)
+plt.title("Sine Wave")
+plt.xlabel("x")
+plt.ylabel("y")
+plt.show()
+  </textarea>
+  <br>
+  <button onclick="runPython()">Run Python</button>
+  <div id="output"></div>
+
+  <script>
+    let pyodideReadyPromise = loadPyodide({
+      indexURL : "https://cdn.jsdelivr.net/pyodide/v0.24.0/full/"
+    });
+
+    async function runPython() {
+      let pyodide = await pyodideReadyPromise;
+      let code = document.getElementById("code").value;
+
+      try {
+        // Load packages dynamically
+        await pyodide.loadPackage(["numpy", "matplotlib"]);
+        
+        // Clear previous plots
+        document.getElementById("output").innerHTML = "";
+
+        // Redirect matplotlib output to HTML canvas
+        pyodide.runPython(`
+import matplotlib
+matplotlib.use('AGG')
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from matplotlib.figure import Figure
+canvas_dict = {}
+`);
+
+        await pyodide.runPythonAsync(code);
+
+        // Convert matplotlib figure to PNG and display
+        let displayScript = `
+import io, base64
+buf = io.BytesIO()
+plt.savefig(buf, format='png')
+buf.seek(0)
+img_bytes = base64.b64encode(buf.read()).decode('ascii')
+img_tag = f'<img src="data:image/png;base64,{img_bytes}"/>'
+img_tag
+`;
+        let imgTag = await pyodide.runPythonAsync(displayScript);
+        document.getElementById("output").innerHTML = imgTag;
+
+      } catch (err) {
+        document.getElementById("output").textContent = err;
+      }
+    }
+  </script>
+</body>
+</html>
