@@ -563,133 +563,191 @@
 
   // ================== CONSTELLATIONS ==================
   const constellations = [
-    // Top-left
+    // Orion — recognisable belt + shoulders
     {
       name: "Orion",
       stars: [
-        {x: -320, y: -200}, {x: -300, y: -170}, {x: -330, y: -140},
-        {x: -280, y: -120}, {x: -260, y: -150}, {x: -240, y: -180}
+        {x: -280, y: -180}, // Betelgeuse
+        {x: -240, y: -200}, // Bellatrix
+        {x: -260, y: -150}, // Alnitak (belt)
+        {x: -240, y: -140}, // Alnilam (belt)
+        {x: -220, y: -130}, // Mintaka (belt)
+        {x: -220, y: -90},  // Saiph
+        {x: -260, y: -100}  // Rigel
       ],
-      lines: [[0,1],[1,3],[2,1],[3,4],[4,5]],
+      lines: [[0,1],[1,4],[0,2],[2,3],[3,4],[2,6],[4,5]],
       link: "https://en.wikipedia.org/wiki/Orion_(constellation)",
       tooltip: "Orion — The Hunter"
     },
-    // Top-right
+
+    // Ursa Major — Big Dipper shape
     {
       name: "Ursa Major",
       stars: [
-        {x: 260, y: -220}, {x: 280, y: -200}, {x: 300, y: -180},
-        {x: 320, y: -160}, {x: 300, y: -140}, {x: 280, y: -160}, {x: 260, y: -180}
+        {x: 200, y: -220}, // Dubhe
+        {x: 220, y: -200}, // Merak
+        {x: 240, y: -180}, // Phecda
+        {x: 260, y: -160}, // Megrez
+        {x: 280, y: -150}, // Alioth
+        {x: 300, y: -140}, // Mizar
+        {x: 320, y: -130}  // Alkaid
       ],
       lines: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6]],
       link: "https://en.wikipedia.org/wiki/Ursa_Major",
       tooltip: "Ursa Major — The Great Bear"
     },
-    // Bottom-left
+
+    // Cassiopeia — “W” shape
     {
       name: "Cassiopeia",
       stars: [
-        {x: -320, y: 200}, {x: -290, y: 180}, {x: -260, y: 210},
-        {x: -230, y: 190}, {x: -200, y: 220}
+        {x: -300, y: 180},
+        {x: -280, y: 200},
+        {x: -260, y: 180},
+        {x: -240, y: 200},
+        {x: -220, y: 180}
       ],
       lines: [[0,1],[1,2],[2,3],[3,4]],
       link: "https://en.wikipedia.org/wiki/Cassiopeia_(constellation)",
       tooltip: "Cassiopeia — The Queen"
     },
-    // Bottom-right
+
+    // Cygnus — cross shape
     {
       name: "Cygnus",
       stars: [
-        {x: 220, y: 200}, {x: 240, y: 170}, {x: 260, y: 140},
-        {x: 280, y: 110}, {x: 300, y: 80}, {x: 320, y: 100}
+        {x: 220, y: 200}, // Albireo (tail)
+        {x: 240, y: 170}, // Sadr (center)
+        {x: 260, y: 140}, // Gienah
+        {x: 280, y: 110}, // Delta Cyg
+        {x: 300, y: 80},  // Deneb (head)
+        {x: 260, y: 170}  // Wing
       ],
-      lines: [[0,1],[1,2],[2,3],[3,4],[2,5]],
+      lines: [[0,1],[1,2],[2,3],[3,4],[1,5]],
       link: "https://en.wikipedia.org/wiki/Cygnus_(constellation)",
       tooltip: "Cygnus — The Swan"
     },
-    // Top
+
+    // Lyra — small parallelogram with Vega
     {
       name: "Lyra",
       stars: [
-        {x: -60, y: -260}, {x: -40, y: -240}, {x: -20, y: -260},
-        {x: -30, y: -280}, {x: -50, y: -280}
+        {x: -40, y: -260}, // Vega
+        {x: -20, y: -240},
+        {x: 0,   y: -250},
+        {x: -20, y: -270},
+        {x: -40, y: -280}
       ],
       lines: [[0,1],[1,2],[2,3],[3,4],[4,0]],
       link: "https://en.wikipedia.org/wiki/Lyra",
       tooltip: "Lyra — The Lyre"
     },
-    // Bottom
+
+    // Scorpius — curved tail
     {
       name: "Scorpius",
       stars: [
-        {x: 0, y: 260}, {x: 20, y: 240}, {x: 40, y: 220},
-        {x: 60, y: 200}, {x: 80, y: 180}, {x: 70, y: 160}, {x: 50, y: 140}
+        {x: 0, y: 200},  // Antares
+        {x: 20, y: 220},
+        {x: 40, y: 240},
+        {x: 60, y: 260},
+        {x: 80, y: 280},
+        {x: 100, y: 300},
+        {x: 120, y: 280}
       ],
       lines: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6]],
       link: "https://en.wikipedia.org/wiki/Scorpius",
       tooltip: "Scorpius — The Scorpion"
     },
-    // Left side
+
+    // Leo — sickle + body
     {
       name: "Leo",
       stars: [
-        {x: -300, y: 0}, {x: -270, y: 20}, {x: -240, y: 40},
-        {x: -220, y: 20}, {x: -200, y: 0}, {x: -220, y: -20}
+        {x: -300, y: 0},   // Regulus
+        {x: -270, y: -20},
+        {x: -240, y: -40}, // Algieba
+        {x: -220, y: -20},
+        {x: -200, y: 0},
+        {x: -220, y: 20}
       ],
       lines: [[0,1],[1,2],[2,3],[3,4],[2,5]],
       link: "https://en.wikipedia.org/wiki/Leo_(constellation)",
       tooltip: "Leo — The Lion"
     },
-    // Right side
+
+    // Taurus — V-shaped Hyades + Aldebaran
     {
       name: "Taurus",
       stars: [
-        {x: 300, y: 0}, {x: 320, y: 30}, {x: 340, y: 10},
-        {x: 360, y: -10}, {x: 380, y: -30}
+        {x: 300, y: 0},   // Aldebaran
+        {x: 320, y: -20},
+        {x: 340, y: -40},
+        {x: 360, y: -20},
+        {x: 380, y: 0}
       ],
       lines: [[0,1],[1,2],[2,3],[3,4]],
       link: "https://en.wikipedia.org/wiki/Taurus_(constellation)",
       tooltip: "Taurus — The Bull"
     },
-    // Above right
+
+    // Gemini — twin verticals
     {
       name: "Gemini",
       stars: [
-        {x: 160, y: -240}, {x: 180, y: -260}, {x: 200, y: -280},
-        {x: 220, y: -260}, {x: 240, y: -240}
+        {x: 160, y: -240}, // Castor
+        {x: 160, y: -210},
+        {x: 160, y: -180},
+        {x: 200, y: -240}, // Pollux
+        {x: 200, y: -210},
+        {x: 200, y: -180}
       ],
-      lines: [[0,1],[1,2],[2,3],[3,4]],
+      lines: [[0,1],[1,2],[3,4],[4,5]],
       link: "https://en.wikipedia.org/wiki/Gemini_(constellation)",
       tooltip: "Gemini — The Twins"
     },
-    // Above left
+
+    // Aquarius — zigzag water flow
     {
       name: "Aquarius",
       stars: [
-        {x: -160, y: -240}, {x: -140, y: -220}, {x: -120, y: -200},
-        {x: -100, y: -220}, {x: -80, y: -240}
+        {x: -160, y: -240},
+        {x: -140, y: -220},
+        {x: -120, y: -240},
+        {x: -100, y: -220},
+        {x: -80, y: -240}
       ],
       lines: [[0,1],[1,2],[2,3],[3,4]],
       link: "https://en.wikipedia.org/wiki/Aquarius_(constellation)",
       tooltip: "Aquarius — The Water Bearer"
     },
-    // Below right
+
+    // Sagittarius — teapot shape
     {
       name: "Sagittarius",
       stars: [
-        {x: 160, y: 240}, {x: 180, y: 260}, {x: 200, y: 280},
-        {x: 220, y: 260}, {x: 240, y: 240}
+        {x: 160, y: 240},
+        {x: 180, y: 260},
+        {x: 200, y: 240},
+        {x: 220, y: 260},
+        {x: 240, y: 240}
       ],
       lines: [[0,1],[1,2],[2,3],[3,4]],
       link: "https://en.wikipedia.org/wiki/Sagittarius_(constellation)",
       tooltip: "Sagittarius — The Archer"
     },
-    // Below left
+
+    // Ursa Minor — Little Dipper
     {
       name: "Ursa Minor",
       stars: [
-        {x: -160, y: 240}, {x: -140, y: 260}, {x: -120, y: 280},
-        {x: -100, y: 300}, {x: -80, y: 320}, {x: -100, y: 340}, {x: -120, y: 360}
+        {x: -160, y: 200}, // Polaris
+        {x: -140, y: 220},
+        {x: -120, y: 240},
+        {x: -100, y: 260},
+        {x: -80, y: 280},
+        {x: -100, y: 300},
+        {x: -120, y: 320}
       ],
       lines: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6]],
       link: "https://en.wikipedia.org/wiki/Ursa_Minor",
@@ -849,8 +907,8 @@
       const metrics = ctx.measureText(text);
       const tw = metrics.width + pad*2;
       const th = 20;
-      const tooltipX = (mousePos.x - view.cx) / view.zoom + pad;
-      const tooltipY = (mousePos.y - view.cy) / view.zoom + th/1.5;
+      const tooltipX = (mousePos.x - view.cx) / view.zoom + 12 * view.zoom;
+      const tooltipY = (mousePos.y - view.cy) / view.zoom + 12 * view.zoom;
 
       // background
       ctx.fillStyle = "rgba(0,0,0,0.7)";
