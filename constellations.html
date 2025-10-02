@@ -840,7 +840,8 @@
     // tooltip
     if (hoveredConstellation) {
       ctx.save();
-      ctx.resetTransform();
+      //ctx.resetTransform();
+
       ctx.font = "13px Inter, sans-serif";
       ctx.fillStyle = "rgba(0,0,0,0.7)";
       const pad = 6;
@@ -848,8 +849,8 @@
       const metrics = ctx.measureText(text);
       const tw = metrics.width + pad*2;
       const th = 20;
-      const tooltipX = mousePos.x + 8;
-      const tooltipY = mousePos.y + 8;
+      const tooltipX = (mousePos.x - view.cx) / view.zoom + pad;
+      const tooltipY = (mousePos.y - view.cy) / view.zoom + th/1.5;
 
       // background
       ctx.fillStyle = "rgba(0,0,0,0.7)";
@@ -864,10 +865,6 @@
       ctx.fillStyle = "#fff";
       ctx.fillText(text, tooltipX + pad, tooltipY + th/1.5);
 
-      // optional: text outline for more readability
-      // ctx.strokeStyle = "black";
-      // ctx.lineWidth = 2;
-      // ctx.strokeText(text, tooltipX + pad, tooltipY + th/1.5);
       ctx.restore();
     }
 
