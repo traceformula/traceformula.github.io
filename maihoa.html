@@ -67,8 +67,8 @@ function chiIndexFromHour(h){if(h===23||h===0)return 1;if(h<=2)return 2;if(h<=4)
 function offsetHoursAt(iana,y,m,d,hh,mm){const dtUTC=new Date(Date.UTC(y,m-1,d,hh,mm));const fmt=new Intl.DateTimeFormat("en-US",{timeZone:iana,timeZoneName:"shortOffset"});const s=fmt.format(dtUTC);const m1=s.match(/GMT([+-]\d{2})(?::?(\d{2}))?/);if(!m1)return 0;const h=parseInt(m1[1]);const mi=m1[2]?parseInt(m1[2]):0;return h+(h>=0?mi/60:-mi/60);}
 const build=(l,u)=>[...TRIGRAMS[l].lines,...TRIGRAMS[u].lines];
 const mutate=(arr,i)=>{const o=[...arr];o[i-1]=o[i-1]?0:1;return o;}
-//const render=(lines,m)=>{const s=v=>v?"───────":"── ──";let t="";for(let i=6;i>=1;i--){t+=i+" | "+s(lines[i-1]);if(i===m)t+=" ⇢ động";t+="\n";}return t;}
-
+const render=(lines,m)=>{const s=v=>v?"───────":"── ──";let t="";for(let i=6;i>=1;i--){t+=i+" | "+s(lines[i-1]);if(i===m)t+=" ⇢ động";t+="\n";}return t;}
+/*
 function render(lines, moving) {
   const s = v => v ? "───────" : "── ──";
   let t = "";
@@ -79,7 +79,7 @@ function render(lines, moving) {
     t += "\n";
   }
   return t;
-}
+} */
 
 function trigramIndex(bits){for(let i=1;i<=8;i++){const t=TRIGRAMS[i].lines;if(t[0]===bits[0]&&t[1]===bits[1]&&t[2]===bits[2])return i;}return 1;}
 
@@ -89,73 +89,36 @@ function yearCanChi(lunarYear){const canIdx=(lunarYear+6)%10,chiIdx=(lunarYear+8
 function monthCanChi(lunarMonth,yearCanIndex){let base;if(yearCanIndex===1||yearCanIndex===6)base=3;else if(yearCanIndex===2||yearCanIndex===7)base=5;else if(yearCanIndex===3||yearCanIndex===8)base=7;else if(yearCanIndex===4||yearCanIndex===9)base=9;else base=1;const stemIdx=mod1(base+(lunarMonth-1),10);const branchIdx=mod1(lunarMonth+2,12);return {monthCan:CAN[stemIdx-1],monthChi:CHI[branchIdx-1]};}
 function hourCanChi(dayCanIndex,hourBranchIdx){let base;if(dayCanIndex===1||dayCanIndex===6)base=1;else if(dayCanIndex===2||dayCanIndex===7)base=3;else if(dayCanIndex===3||dayCanIndex===8)base=5;else if(dayCanIndex===4||dayCanIndex===9)base=7;else base=9;const stemIdx=mod1(base+(hourBranchIdx-1),10);return {hourCan:CAN[stemIdx-1],hourChi:CHI[hourBranchIdx-1]};}
 
-// 64 Quẻ
-const HEX_NAMES=[[],
-["Càn Vi Thiên","乾為天","Thuần dương, sáng suốt, tự cường, đại cát."],
-["Phong Thiên Tiểu Súc","風天小畜","Tích tụ nhỏ, chờ thời, thuận trung."],
-["Hỏa Thiên Đại Hữu","火天大有","Đại phú, thịnh vượng, có danh vọng."],
-["Trạch Thiên Quải","澤天夬","Quyết đoán, dứt bỏ điều xấu, thuận lợi."],
-["Sơn Thiên Đại Súc","山天大畜","Tích đức, tiềm tàng sức mạnh, chờ thời cơ."],
-["Thủy Thiên Nhu","水天需","Chờ đợi thuận thời, giữ đạo mà thành."],
-["Lôi Thiên Đại Tráng","雷天大壯","Cường tráng, tự tin, hành động lớn."],
-["Địa Thiên Thái","地天泰","Thời thông suốt, âm dương hòa hợp, đại cát."],
-["Thiên Trạch Lý","天澤履","Cẩn trọng, hành sự có kỷ cương, giữ đạo trung dung."],
-["Phong Trạch Trung Phu","風澤中孚","Thành tín, trung thực, được lòng người."],
-["Hỏa Trạch Khuê","火澤睽","Khác ý, đối nghịch, cần hòa giải."],
-["Trạch Vi Đoài","兌為澤","Vui vẻ, hòa thuận, thuận lợi nhỏ."],
-["Sơn Trạch Tổn","山澤損","Giảm bớt, tiết chế, để lâu bền."],
-["Thủy Trạch Tiết","水澤節","Tiết độ, biết dừng, tránh vượt giới hạn."],
-["Lôi Trạch Quy Muội","雷澤歸妹","Kết hợp sai thời, cẩn trọng."],
-["Địa Trạch Lâm","地澤臨","Có người giúp, thời cơ đến, cát."],
-["Thiên Hỏa Đồng Nhân","天火同人","Đồng lòng, đồng chí, đại cát."],
-["Phong Hỏa Gia Nhân","風火家人","Gia đạo hòa thuận, trị nhà có phép."],
-["Ly Vi Hỏa","離為火","Sáng suốt, thông minh, dễ phân tán."],
-["Trạch Hỏa Cách","澤火革","Cải cách, đổi mới, chuyển thời vận."],
-["Sơn Hỏa Bí","山火賁","Trang sức, đẹp đẽ, thích hợp nhỏ."],
-["Thủy Hỏa Ký Tế","水火既濟","Hoàn tất, việc lớn thành, thuận lợi."],
-["Lôi Hỏa Phong","雷火豐","Thịnh vượng, sáng rõ, dễ tự mãn."],
-["Địa Hỏa Minh Di","地火明夷","Ẩn minh, giữ mình, tránh nguy hiểm."],
-["Thiên Lôi Vô Vọng","天雷无妄","Chớ vọng động, tránh sai lầm."],
-["Phong Lôi Ích","風雷益","Được lợi, tiến triển, thêm tài lộc."],
-["Hỏa Lôi Phệ Hạp","火雷噬嗑","Giải quyết, công chính thắng."],
-["Trạch Lôi Tùy","澤雷隨","Tùy thuận thời thế, cát."],
-["Sơn Lôi Di","山雷頤","Dưỡng đạo, nuôi chí, lấy chính mà bền."],
-["Thủy Lôi Truân","水雷屯","Khởi đầu gian nan, kiên nhẫn vượt khó."],
-["Chấn Vi Lôi","震為雷","Động, khai mở, nhưng chớ nóng vội."],
-["Địa Lôi Phục","地雷復","Phục hồi, trở lại chính đạo, cát."],
-["Thiên Phong Cấu","天風姤","Bất ngờ gặp gỡ, nên giữ lễ."],
-["Tốn Vi Phong","巽為風","Uyển chuyển, thuận theo, hanh thông."],
-["Hỏa Phong Đỉnh","火風鼎","Cải cách, hưng thịnh, đại cát."],
-["Trạch Phong Đại Quá","澤風大過","Quá mức, cần tiết chế, nguy cơ tiềm ẩn."],
-["Sơn Phong Cổ","山風蠱","Sửa lỗi cũ, cải hóa, trung cát."],
-["Thủy Phong Tỉnh","水風井","Nguồn gốc bền, nhân nghĩa, ổn định."],
-["Lôi Phong Hằng","雷風恆","Bền lâu, giữ đạo chính, đại cát."],
-["Địa Phong Thăng","地風升","Thăng tiến, từng bước, thuận lợi."],
-["Thiên Thủy Tụng","天水訟","Tranh tụng, nên nhường, cẩn trọng."],
-["Phong Thủy Hoán","風水渙","Tan rã, phân tán, rồi lại hợp."],
-["Hỏa Thủy Vị Tế","火水未濟","Chưa hoàn tất, cần kiên trì."],
-["Trạch Thủy Khốn","澤水困","Khó khăn, giữ chính thì vượt qua."],
-["Sơn Thủy Mông","山水蒙","Mông muội, học đạo, khai mở."],
-["Khảm Vi Thủy","坎為水","Hiểm trở, kiên trì vượt qua."],
-["Lôi Thủy Giải","雷水解","Giải trừ, cứu nguy, cát."],
-["Địa Thủy Sư","地水師","Chỉ huy, có tổ chức, công chính."],
-["Thiên Sơn Độn","天山遯","Rút lui, giữ mình, thuận lợi khi thoái."],
-["Phong Sơn Tiệm","風山漸","Tiến dần, ổn định, cát."],
-["Hỏa Sơn Lữ","火山旅","Ly hương, gian truân, có quý nhân."],
-["Trạch Sơn Hàm","澤山咸","Cảm ứng, tình cảm, hòa hợp."],
-["Cấn Vi Sơn","艮為山","Dừng lại, biết đủ, an ổn."],
-["Thủy Sơn Kiển","水山蹇","Trắc trở, vượt khó, trung cát."],
-["Lôi Sơn Tiểu Quá","雷山小過","Nhỏ quá, chớ mạo hiểm, giữ an."],
-["Địa Sơn Khiêm","地山謙","Khiêm tốn, nhu thuận, đại cát."],
-["Thiên Địa Bĩ","天地否","Bế tắc, âm thịnh, giữ đạo chờ thời."],
-["Phong Địa Quan","風地觀","Quan sát, tĩnh lặng, học hiểu đạo."],
-["Hỏa Địa Tấn","火地晉","Tiến lên, thăng chức, đại cát."],
-["Trạch Địa Tụy","澤地萃","Tụ họp, đồng lòng, đại lợi."],
-["Sơn Địa Bác","山地剝","Tổn hao, tan rã, chớ hành động."],
-["Thủy Địa Tỷ","水地比","Thân cận, hợp tác, cát."],
-["Lôi Địa Dự","雷地豫","Vui vẻ, chuẩn bị, đừng quá đà."],
-["Khôn Vi Địa","坤為地","Thuần âm, thuận theo, nhu mà thắng."]
+// Ma trận 8×8: hàng = THƯỢNG (upper), cột = HẠ (lower)
+// Thứ tự quái: 1 Càn, 2 Đoài, 3 Ly, 4 Chấn, 5 Tốn, 6 Khảm, 7 Cấn, 8 Khôn
+const HEX_NAMES = [
+  [],
+  // upper = Càn
+  ["Càn Vi Thiên","乾為天"],["Thiên Trạch Lý","天澤履"],["Thiên Hỏa Đồng Nhân","天火同人"],["Thiên Lôi Vô Vọng","天雷无妄"],
+  ["Thiên Phong Cấu","天風姤"],["Thiên Thủy Tụng","天水訟"],["Thiên Sơn Độn","天山遯"],["Thiên Địa Bĩ","天地否"],
+  // upper = Đoài
+  ["Trạch Thiên Quải","澤天夬"],["Trạch Vi Đoài","兌為澤"],["Trạch Hỏa Cách","澤火革"],["Trạch Lôi Tùy","澤雷隨"],
+  ["Trạch Phong Đại Quá","澤風大過"],["Trạch Thủy Khốn","澤水困"],["Trạch Sơn Hàm","澤山咸"],["Trạch Địa Tụy","澤地萃"],
+  // upper = Ly
+  ["Hỏa Thiên Đại Hữu","火天大有"],["Hỏa Trạch Khuê","火澤睽"],["Ly Vi Hỏa","離為火"],["Hỏa Lôi Phệ Hạp","火雷噬嗑"],
+  ["Hỏa Phong Đỉnh","火風鼎"],["Hỏa Thủy Vị Tế","火水未濟"],["Hỏa Sơn Lữ","火山旅"],["Hỏa Địa Tấn","火地晉"],
+  // upper = Chấn
+  ["Lôi Thiên Đại Tráng","雷天大壯"],["Lôi Trạch Quy Muội","雷澤歸妹"],["Lôi Hỏa Phong","雷火豐"],["Chấn Vi Lôi","震為雷"],
+  ["Lôi Phong Hằng","雷風恆"],["Lôi Thủy Giải","雷水解"],["Lôi Sơn Tiểu Quá","雷山小過"],["Lôi Địa Dự","雷地豫"],
+  // upper = Tốn
+  ["Phong Thiên Tiểu Súc","風天小畜"],["Phong Trạch Trung Phu","風澤中孚"],["Phong Hỏa Gia Nhân","風火家人"],["Phong Lôi Ích","風雷益"],
+  ["Tốn Vi Phong","巽為風"],["Phong Thủy Hoán","風水渙"],["Phong Sơn Tiệm","風山漸"],["Phong Địa Quan","風地觀"],
+  // upper = Khảm
+  ["Thủy Thiên Nhu","水天需"],["Thủy Trạch Tiết","水澤節"],["Thủy Hỏa Ký Tế","水火既濟"],["Thủy Lôi Truân","水雷屯"],
+  ["Thủy Phong Tỉnh","水風井"],["Khảm Vi Thủy","坎為水"],["Thủy Sơn Kiển","水山蹇"],["Thủy Địa Tỷ","水地比"],
+  // upper = Cấn
+  ["Sơn Thiên Đại Súc","山天大畜"],["Sơn Trạch Tổn","山澤損"],["Sơn Hỏa Bí","山火賁"],["Sơn Lôi Di","山雷頤"],
+  ["Sơn Phong Cổ","山風蠱"],["Sơn Thủy Mông","山水蒙"],["Cấn Vi Sơn","艮為山"],["Sơn Địa Bác","山地剝"],
+  // upper = Khôn
+  ["Địa Thiên Thái","地天泰"],["Địa Trạch Lâm","地澤臨"],["Địa Hỏa Minh Di","地火明夷"],["Địa Lôi Phục","地雷復"],
+  ["Địa Phong Thăng","地風升"],["Địa Thủy Sư","地水師"],["Địa Sơn Khiêm","地山謙"],["Khôn Vi Địa","坤為地"],
 ];
+
 
 function getHexIndices(dayAm,monthAm,hourChi,variant){
   const moving=((monthAm+dayAm+hourChi-1)%6)+1;
@@ -188,15 +151,16 @@ function calc(){
   const lines=build(lower,upper);
   const changed=mutate(lines,moving);
 
-  // SUY RA THƯỢNG/HẠ TỪ HÌNH HÀO (đảm bảo tên khớp hình)
-  const lowerFromLines  = trigramIndex(lines.slice(0,3));
-  const upperFromLines  = trigramIndex(lines.slice(3,6));
+  // Suy ra lại thượng/hạ quái thật từ 6 hào hiện có
+  const lowerFromLines  = trigramIndex(lines.slice(0,3));  // 3 hào dưới
+  const upperFromLines  = trigramIndex(lines.slice(3,6));  // 3 hào trên
   const lower2FromLines = trigramIndex(changed.slice(0,3));
   const upper2FromLines = trigramIndex(changed.slice(3,6));
 
-  // Tra tên quẻ từ bảng 64 quẻ theo THỨ TỰ KINH ĐIỂN
+  // Tra quẻ theo hình hào thật
   const idx1 = (upperFromLines - 1) * 8 + lowerFromLines;
   const idx2 = (upper2FromLines - 1) * 8 + lower2FromLines;
+
   const main = HEX_NAMES[idx1];
   const changedHex = HEX_NAMES[idx2];
 
