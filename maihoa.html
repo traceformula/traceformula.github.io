@@ -1,90 +1,170 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="UTF-8" />
-<title>Mai Hoa Dịch Số – Quẻ & Can Chi (DST-safe)</title>
-
-<!-- Âm lịch (offline, đầy đủ) -->
+<meta charset="UTF-8">
+<title>Mai Hoa Dịch Số – Thiệu Khang Tiết</title>
+<style>
+body { font-family: "Segoe UI", sans-serif; background:#fefefe; padding:20px; line-height:1.5; }
+label { display:block; margin:6px 0; }
+pre { background:#fff; border:1px solid #ccc; border-radius:8px; padding:12px; white-space:pre-wrap; }
+button { padding:8px 14px; cursor:pointer; margin-top:8px; border-radius:5px; background:#eee; }
+</style>
 <script>
-var AmLich={INT:Math.floor,jdFromDate:function(d,m,y){var a=this.INT((14-m)/12);var yy=y+4800-a;var mm=m+12*a-3;var jd=d+this.INT((153*mm+2)/5)+365*yy+this.INT(yy/4)-this.INT(yy/100)+this.INT(yy/400)-32045;if(jd<2299161)jd=d+this.INT((153*mm+2)/5)+365*yy+this.INT(yy/4)-32083;return jd},NewMoon:function(k){var T=k/1236.85,T2=T*T,T3=T2*T,dr=Math.PI/180;var Jd1=2415020.75933+29.53058868*k+0.0001178*T2-0.000000155*T3;Jd1+=0.00033*Math.sin((166.56+132.87*T-0.009173*T2)*dr);var M=359.2242+29.10535608*k-0.0000333*T2-0.00000347*T3;var Mpr=306.0253+385.81691806*k+0.0107306*T2+0.00001236*T3;var F=21.2964+390.67050646*k-0.0016528*T2-0.00000239*T3;var C1=(0.1734-0.000393*T)*Math.sin(M*dr)+0.0021*Math.sin(2*M*dr)-0.4068*Math.sin(Mpr*dr)+0.0161*Math.sin(2*Mpr*dr)+0.0104*Math.sin(2*F*dr)-0.0051*Math.sin((M+Mpr)*dr);var deltat=T<-11?0.001+0.000839*T+0.0002261*T2-0.00000845*T3-0.000000081*T*T3:-0.000278+0.000265*T+0.000262*T2;return Jd1+C1-deltat},SunLongitude:function(jdn){var T=(jdn-2451545.0)/36525;var dr=Math.PI/180;var M=357.52910+35999.05030*T-0.0001559*T*T-0.00000048*T*T*T;var L0=280.46645+36000.76983*T+0.0003032*T*T;var DL=(1.914600-0.004817*T-0.000014*T*T)*Math.sin(dr*M)+(0.019993-0.000101*T)*Math.sin(2*dr*M)+0.000290*Math.sin(3*dr*M);var L=L0+DL;L=L*dr;L=L-2*Math.PI*Math.floor(L/(2*Math.PI));return L},getSunLongitude:function(dayNumber,timeZone){return Math.floor(this.SunLongitude(dayNumber-0.5-timeZone/24)/Math.PI*6)},getNewMoonDay:function(k,tz){return Math.floor(this.NewMoon(k)+0.5+tz/24)},getLunarMonth11:function(yy,tz){var off=this.jdFromDate(31,12,yy)-2415021;var k=Math.floor(off/29.530588853);var nm=this.getNewMoonDay(k,tz);var sunLong=this.getSunLongitude(nm,tz);if(sunLong>=9)nm=this.getNewMoonDay(k-1,tz);return nm},getLeapMonthOffset:function(a11,tz){var k=Math.floor((a11-2415021.076998695)/29.530588853+0.5);var last,arc=this.getSunLongitude(this.getNewMoonDay(k+1,tz),tz);var i=1;do{last=arc;i++;arc=this.getSunLongitude(this.getNewMoonDay(k+i,tz),tz);}while(arc!=last&&i<14);return i-1},convertSolar2Lunar:function(dd,mm,yy,tz){var dayNumber=this.jdFromDate(dd,mm,yy);var k=Math.floor((dayNumber-2415021.076998695)/29.530588853);var monthStart=this.getNewMoonDay(k+1,tz);if(monthStart>dayNumber)monthStart=this.getNewMoonDay(k,tz);var a11=this.getLunarMonth11(yy,tz);var b11=a11,lunarYear;if(a11>=monthStart){a11=this.getLunarMonth11(yy-1,tz);lunarYear=yy;}else{b11=this.getLunarMonth11(yy+1,tz);lunarYear=yy+1;}var lunarDay=dayNumber-monthStart+1;var diff=Math.floor((monthStart-a11)/29);var lunarLeap=0,lunarMonth=diff+11;if(b11-a11>365){var leapMonthDiff=this.getLeapMonthOffset(a11,tz);if(diff>=leapMonthDiff){lunarMonth=diff+10;if(diff==leapMonthDiff)lunarLeap=1;}}if(lunarMonth>12)lunarMonth-=12;if(lunarMonth>=11&&diff<4)lunarYear-=1;return[lunarDay,lunarMonth,lunarYear,lunarLeap];}};
+// ================= Âm Lịch =================
+var AmLich={INT:Math.floor,jdFromDate:function(d,m,y){var a=this.INT((14-m)/12);var yy=y+4800-a;var mm=m+12*a-3;var jd=d+this.INT((153*mm+2)/5)+365*yy+this.INT(yy/4)-this.INT(yy/100)+this.INT(yy/400)-32045;if(jd<2299161)jd=d+this.INT((153*mm+2)/5)+365*yy+this.INT(yy/4)-32083;return jd},NewMoon:function(k){var T=k/1236.85,T2=T*T,T3=T2*T,dr=Math.PI/180;var Jd1=2415020.75933+29.53058868*k+0.0001178*T2-0.000000155*T3;Jd1+=0.00033*Math.sin((166.56+132.87*T-0.009173*T2)*dr);var M=359.2242+29.10535608*k-0.0000333*T2-0.00000347*T3;var Mpr=306.0253+385.81691806*k+0.0107306*T2+0.00001236*T3;var F=21.2964+390.67050646*k-0.0016528*T2-0.00000239*T3;var C1=(0.1734-0.000393*T)*Math.sin(M*dr)+0.0021*Math.sin(2*M*dr)-0.4068*Math.sin(Mpr*dr)+0.0161*Math.sin(2*Mpr*dr)+0.0104*Math.sin(2*F*dr)-0.0051*Math.sin((M+Mpr)*dr);var deltat=T<-11?0.001+0.000839*T+0.0002261*T2-0.00000845*T3-0.000000081*T*T3:-0.000278+0.000265*T+0.000262*T2;return Jd1+C1-deltat},getNewMoonDay:function(k,tz){return Math.floor(this.NewMoon(k)+0.5+tz/24)},getSunLongitude:function(jdn,tz){var T=(jdn-2451545.0)/36525;var dr=Math.PI/180;var M=357.52910+35999.05030*T-0.0001559*T*T-0.00000048*T*T*T;var L0=280.46645+36000.76983*T+0.0003032*T*T;var DL=(1.914600-0.004817*T-0.000014*T*T)*Math.sin(dr*M)+(0.019993-0.000101*T)*Math.sin(2*dr*M)+0.000290*Math.sin(3*dr*M);var L=L0+DL;L=L*dr;L=L-2*Math.PI*Math.floor(L/(2*Math.PI));return Math.floor(L/Math.PI*6)},getLunarMonth11:function(yy,tz){var off=this.jdFromDate(31,12,yy)-2415021;var k=Math.floor(off/29.530588853);var nm=this.getNewMoonDay(k,tz);if(this.getSunLongitude(nm,tz)>=9)nm=this.getNewMoonDay(k-1,tz);return nm},getLeapMonthOffset:function(a11,tz){var k=Math.floor((a11-2415021.076998695)/29.530588853+0.5);var last,arc=this.getSunLongitude(this.getNewMoonDay(k+1,tz),tz);var i=1;do{last=arc;i++;arc=this.getSunLongitude(this.getNewMoonDay(k+i,tz),tz);}while(arc!=last&&i<14);return i-1},convertSolar2Lunar:function(dd,mm,yy,tz){var dayNumber=this.jdFromDate(dd,mm,yy);var k=Math.floor((dayNumber-2415021.076998695)/29.530588853);var monthStart=this.getNewMoonDay(k+1,tz);if(monthStart>dayNumber)monthStart=this.getNewMoonDay(k,tz);var a11=this.getLunarMonth11(yy,tz);var b11=a11,lunarYear;if(a11>=monthStart){a11=this.getLunarMonth11(yy-1,tz);lunarYear=yy;}else{b11=this.getLunarMonth11(yy+1,tz);lunarYear=yy+1;}var lunarDay=dayNumber-monthStart+1;var diff=Math.floor((monthStart-a11)/29);var lunarLeap=0,lunarMonth=diff+11;if(b11-a11>365){var leapMonthDiff=this.getLeapMonthOffset(a11,tz);if(diff>=leapMonthDiff){lunarMonth=diff+10;if(diff==leapMonthDiff)lunarLeap=1;}}if(lunarMonth>12)lunarMonth-=12;if(lunarMonth>=11&&diff<4)lunarYear-=1;return[lunarDay,lunarMonth,lunarYear,lunarLeap];}};
 </script>
 </head>
 <body>
-<h2>🔮 Mai Hoa Dịch Số – Quẻ & Can Chi</h2>
-
-<label>Ngày dương: <input type="date" id="solarDate"></label><br>
-<label>Giờ (hh:mm): <input type="time" id="solarTime" value="01:23"></label><br>
-<label>Múi giờ (IANA):
+<h2>🌸 Mai Hoa Dịch Số – Thiệu Khang Tiết</h2>
+<label>Ngày dương: <input type="date" id="solarDate"></label>
+<label>Giờ (hh:mm): <input type="time" id="solarTime" value="01:46"></label>
+<label>Múi giờ:
   <select id="iana">
     <option value="Asia/Ho_Chi_Minh">Asia/Ho_Chi_Minh (VN)</option>
-    <option value="America/New_York">America/New_York (NY)</option>
-    <option value="America/Los_Angeles">America/Los_Angeles (CA)</option>
+    <option value="America/New_York">America/New_York</option>
   </select>
 </label>
-<label style="margin-left:10px;"><input type="checkbox" id="vnStd"> Dùng chuẩn lịch VN (UTC+7)</label><br>
-<button onclick="calc()">Lập quẻ</button>
+<label><input type="checkbox" id="vnStd" checked> Dùng chuẩn VN (UTC+7)</label>
+<label>Phương án:
+  <select id="variant">
+    <option value="B" selected>Phương án B (Thiệu Khang Tiết)</option>
+    <option value="A">Phương án A (thông thường)</option>
+  </select>
+</label>
+<div id="explain" style="font-size:14px; background:#f8f8f8; border-left:4px solid #999; padding:8px 12px; margin:8px 0; line-height:1.5;">
+  <b>🧭 Giải thích:</b><br>
+  • <b>Phương án A (phổ thông)</b>:<br>
+  &nbsp;&nbsp;– Thượng quái = (tháng + ngày) mod 8<br>
+  &nbsp;&nbsp;– Hạ quái = (ngày + giờ) mod 8<br>
+  &nbsp;&nbsp;– Hào động = (tháng + ngày + giờ) mod 6<br>
+  👉 Dễ hiểu, phổ biến trong các sách Dịch học hiện đại.<br><br>
 
-<pre id="out" style="white-space:pre-wrap;"></pre>
+  • <b>Phương án B (Thiệu Khang Tiết – Mai Hoa chuẩn)</b>:<br>
+  &nbsp;&nbsp;– Thượng quái = (tháng + giờ) mod 8<br>
+  &nbsp;&nbsp;– Hạ quái = (ngày + tháng) mod 8<br>
+  &nbsp;&nbsp;– Hào động = (tháng + ngày + giờ) mod 6<br>
+  👉 Nhấn mạnh “thiên – nhân – địa” phối hợp (thiên thời là tháng, nhân là ngày, địa là giờ).<br>
+  Dùng cho Mai Hoa Dịch Số nguyên bản của Thiệu Khang Tiết (Bắc Tống).<br><br>
+  💡 <i>Phương án B</i> thường cho kết quả “thuần dịch lý” và tương thích với bản đồ quẻ trong Thiệu tiên sinh,  
+  còn <i>phương án A</i> dùng thuận tiện hơn trong các hệ giản hóa hiện đại.
+</div>
+<button onclick="calc()">Lập quẻ</button>
+<pre id="out"></pre>
 
 <script>
-// ===== Bát quái & 64 quẻ =====
-const TRIGRAMS={1:{vn:"Càn",symbol:"☰",lines:[1,1,1]},2:{vn:"Đoài",symbol:"☱",lines:[1,1,0]},3:{vn:"Ly",symbol:"☲",lines:[1,0,1]},4:{vn:"Chấn",symbol:"☳",lines:[1,0,0]},5:{vn:"Tốn",symbol:"☴",lines:[0,1,1]},6:{vn:"Khảm",symbol:"☵",lines:[0,1,0]},7:{vn:"Cấn",symbol:"☶",lines:[0,0,1]},8:{vn:"Khôn",symbol:"☷",lines:[0,0,0]}};
-const HEX_NAMES=[[],["Càn","Càn Vi Thiên","乾為天"],["Càn","Phong Thiên Tiểu Súc","風天小畜"],["Càn","Hỏa Thiên Đại Hữu","火天大有"],["Càn","Trạch Thiên Quải","澤天夬"],["Càn","Sơn Thiên Đại Súc","山天大畜"],["Càn","Thủy Thiên Nhu","水天需"],["Càn","Lôi Thiên Đại Tráng","雷天大壯"],["Càn","Địa Thiên Thái","地天泰"],["Đoài","Thiên Trạch Lý","天澤履"],["Đoài","Phong Trạch Trung Phu","風澤中孚"],["Đoài","Hỏa Trạch Khuê","火澤睽"],["Đoài","Trạch Vi Đoài","兌為澤"],["Đoài","Sơn Trạch Tổn","山澤損"],["Đoài","Thủy Trạch Tiết","水澤節"],["Đoài","Lôi Trạch Quy Muội","雷澤歸妹"],["Đoài","Địa Trạch Lâm","地澤臨"],["Ly","Thiên Hỏa Đồng Nhân","天火同人"],["Ly","Phong Hỏa Gia Nhân","風火家人"],["Ly","Ly Vi Hỏa","離為火"],["Ly","Trạch Hỏa Cách","澤火革"],["Ly","Sơn Hỏa Bí","山火賁"],["Ly","Thủy Hỏa Ký Tế","水火既濟"],["Ly","Lôi Hỏa Phong","雷火豐"],["Ly","Địa Hỏa Minh Di","地火明夷"],["Chấn","Thiên Lôi Vô Vọng","天雷无妄"],["Chấn","Phong Lôi Ích","風雷益"],["Chấn","Hỏa Lôi Phệ Hạp","火雷噬嗑"],["Chấn","Trạch Lôi Tùy","澤雷隨"],["Chấn","Sơn Lôi Di","山雷頤"],["Chấn","Thủy Lôi Truân","水雷屯"],["Chấn","Chấn Vi Lôi","震為雷"],["Chấn","Địa Lôi Phục","地雷復"],["Tốn","Thiên Phong Cấu","天風姤"],["Tốn","Tốn Vi Phong","巽為風"],["Tốn","Hỏa Phong Đỉnh","火風鼎"],["Tốn","Trạch Phong Đại Quá","澤風大過"],["Tốn","Sơn Phong Cổ","山風蠱"],["Tốn","Thủy Phong Tỉnh","水風井"],["Tốn","Lôi Phong Hằng","雷風恆"],["Tốn","Địa Phong Thăng","地風升"],["Khảm","Thiên Thủy Tụng","天水訟"],["Khảm","Phong Thủy Hoán","風水渙"],["Khảm","Hỏa Thủy Vị Tế","火水未濟"],["Khảm","Trạch Thủy Khốn","澤水困"],["Khảm","Sơn Thủy Mông","山水蒙"],["Khảm","Khảm Vi Thủy","坎為水"],["Khảm","Lôi Thủy Giải","雷水解"],["Khảm","Địa Thủy Sư","地水師"],["Cấn","Thiên Sơn Độn","天山遯"],["Cấn","Phong Sơn Tiệm","風山漸"],["Cấn","Hỏa Sơn Lữ","火山旅"],["Cấn","Trạch Sơn Hàm","澤山咸"],["Cấn","Cấn Vi Sơn","艮為山"],["Cấn","Thủy Sơn Kiển","水山蹇"],["Cấn","Lôi Sơn Tiểu Quá","雷山小過"],["Cấn","Địa Sơn Khiêm","地山謙"],["Khôn","Thiên Địa Bĩ","天地否"],["Khôn","Phong Địa Quan","風地觀"],["Khôn","Hỏa Địa Tấn","火地晉"],["Khôn","Trạch Địa Tụy","澤地萃"],["Khôn","Sơn Địa Bác","山地剝"],["Khôn","Thủy Địa Tỷ","水地比"],["Khôn","Lôi Địa Dự","雷地豫"],["Khôn","Khôn Vi Địa","坤為地"]];
-
 const CAN=["Giáp","Ất","Bính","Đinh","Mậu","Kỷ","Canh","Tân","Nhâm","Quý"];
 const CHI=["Tý","Sửu","Dần","Mão","Thìn","Tỵ","Ngọ","Mùi","Thân","Dậu","Tuất","Hợi"];
-
-// ===== Helpers =====
 const mod1=(x,m)=>{const r=x%m;return r===0?m:r;}
+const TRIGRAMS={1:{vn:"Càn",lines:[1,1,1]},2:{vn:"Đoài",lines:[1,1,0]},3:{vn:"Ly",lines:[1,0,1]},4:{vn:"Chấn",lines:[1,0,0]},5:{vn:"Tốn",lines:[0,1,1]},6:{vn:"Khảm",lines:[0,1,0]},7:{vn:"Cấn",lines:[0,0,1]},8:{vn:"Khôn",lines:[0,0,0]}};
+
+// Ánh xạ Thiệu Khang Tiết
+const MAP_B_UPPER=[null,1,8,4,5,6,3,7,2];
+const MAP_B_LOWER=[null,1,2,3,4,5,6,7,8];
+const MAP_A_UPPER=[null,1,2,3,4,5,6,7,8];
+const MAP_A_LOWER=[null,1,2,3,4,5,6,7,8];
+
 function chiIndexFromHour(h){if(h===23||h===0)return 1;if(h<=2)return 2;if(h<=4)return 3;if(h<=6)return 4;if(h<=8)return 5;if(h<=10)return 6;if(h<=12)return 7;if(h<=14)return 8;if(h<=16)return 9;if(h<=18)return 10;if(h<=20)return 11;return 12;}
-const buildHex=(l,u)=>[...TRIGRAMS[l].lines,...TRIGRAMS[u].lines];
-const mutate=(lines,m)=>{const o=[...lines];o[m-1]=o[m-1]?0:1;return o;}
-const render=(lines,m)=>{const s=v=>v?"───────":"── ──";let t="";for(let i=6;i>=1;i--){t+=i+" | "+s(lines[i-1]);if(i===m)t+=" ⇢ động";t+="\n";}return t;}
-const getHexName=(u,l)=>HEX_NAMES[(u-1)*8+l];
+function offsetHoursAt(iana,y,m,d,hh,mm){const dtUTC=new Date(Date.UTC(y,m-1,d,hh,mm));const fmt=new Intl.DateTimeFormat("en-US",{timeZone:iana,timeZoneName:"shortOffset"});const s=fmt.format(dtUTC);const m1=s.match(/GMT([+-]\d{2})(?::?(\d{2}))?/);if(!m1)return 0;const h=parseInt(m1[1]);const mi=m1[2]?parseInt(m1[2]):0;return h+(h>=0?mi/60:-mi/60);}
+const build=(l,u)=>[...TRIGRAMS[l].lines,...TRIGRAMS[u].lines];
+const mutate=(arr,i)=>{const o=[...arr];o[i-1]=o[i-1]?0:1;return o;}
+//const render=(lines,m)=>{const s=v=>v?"───────":"── ──";let t="";for(let i=6;i>=1;i--){t+=i+" | "+s(lines[i-1]);if(i===m)t+=" ⇢ động";t+="\n";}return t;}
+
+function render(lines, moving) {
+  const s = v => v ? "───────" : "── ──";
+  let t = "";
+  // Vẽ từ hào 1 (dưới) lên hào 6 (trên)
+  for (let i = 1; i <= 6; i++) {
+    t += i + " | " + s(lines[i - 1]);
+    if (i === moving) t += " ⇢ động";
+    t += "\n";
+  }
+  return t;
+}
+
 function trigramIndex(bits){for(let i=1;i<=8;i++){const t=TRIGRAMS[i].lines;if(t[0]===bits[0]&&t[1]===bits[1]&&t[2]===bits[2])return i;}return 1;}
-function offsetHoursAt(iana,y,m,d,hh,mm){const dtUTC=new Date(Date.UTC(y,m-1,d,hh,mm));const fmt=new Intl.DateTimeFormat("en-US",{timeZone:iana,timeZoneName:"shortOffset",hour12:false});const s=fmt.format(dtUTC);const m1=s.match(/GMT([+-]\d{2})(?::?(\d{2}))?/);if(!m1)return 0;const h=parseInt(m1[1],10);const mi=m1[2]?parseInt(m1[2],10):0;return h+(h>=0?mi/60:-mi/60);}
 
-// ===== Can–Chi core =====
-// Can Chi ngày: chuẩn theo chu kỳ 60 với mốc JD
-function dayCanChi(dd,mm,yy){
-  const jd=AmLich.jdFromDate(dd,mm,yy);
-  const canIdx=(jd+9)%10;      // 0..9  -> Giáp
-  const chiIdx=(jd+1)%12;      // 0..11 -> Tý
-  return { dayCan: CAN[canIdx], dayChi: CHI[chiIdx], dayCanIndex: canIdx+1 }; // 1..10
-}
-// Can Chi năm (dựa năm âm)
-function yearCanChi(lunarYear){
-  const canIdx=((lunarYear+6)%10);    // 0..9
-  const chiIdx=((lunarYear+8)%12);    // 0..11
-  return { yearCan: CAN[canIdx], yearChi: CHI[chiIdx], yearCanIndex: canIdx+1 };
-}
-// Can Chi tháng: dùng THÁNG ÂM; Chi: 1=Dần cho tháng 1; Can: phụ thuộc can năm, mỗi tháng +1
-function monthCanChi(lunarMonth, yearCanIndex){
-  // base stem cho tháng 1 (Dần) theo can năm:
-  // Giáp/Kỷ→Bính(3), Ất/Canh→Mậu(5), Bính/Tân→Canh(7), Đinh/Nhâm→Nhâm(9), Mậu/Quý→Giáp(1)
-  let base;
-  if(yearCanIndex===1||yearCanIndex===6) base=3;
-  else if(yearCanIndex===2||yearCanIndex===7) base=5;
-  else if(yearCanIndex===3||yearCanIndex===8) base=7;
-  else if(yearCanIndex===4||yearCanIndex===9) base=9;
-  else base=1; // 5 or 10
-  const stemIdx = mod1(base + (lunarMonth-1), 10);          // 1..10
-  const branchIdx = mod1(lunarMonth + 2, 12);               // 1..12 (1->Dần=3rd chi)
-  return { monthCan: CAN[stemIdx-1], monthChi: CHI[branchIdx-1] };
-}
-// Can Chi giờ: dựa CAN ngày + CHI giờ
-function hourCanChi(dayCanIndex, hourBranchIdx){
-  let base; // can của giờ Tý khi biết can ngày
-  if(dayCanIndex===1||dayCanIndex===6) base=1;      // Giáp/Kỷ -> Tý giờ Giáp
-  else if(dayCanIndex===2||dayCanIndex===7) base=3; // Ất/Canh -> Tý giờ Bính
-  else if(dayCanIndex===3||dayCanIndex===8) base=5; // Bính/Tân -> Tý giờ Mậu
-  else if(dayCanIndex===4||dayCanIndex===9) base=7; // Đinh/Nhâm -> Tý giờ Canh
-  else base=9;                                      // Mậu/Quý -> Tý giờ Nhâm
-  const stemIdx = mod1(base + (hourBranchIdx-1), 10);
-  return { hourCan: CAN[stemIdx-1], hourChi: CHI[hourBranchIdx-1] };
+// Can Chi
+function dayCanChi(dd,mm,yy){const jd=AmLich.jdFromDate(dd,mm,yy);const canIdx=(jd+9)%10;const chiIdx=(jd+1)%12;return {dayCan:CAN[canIdx],dayChi:CHI[chiIdx],dayCanIndex:canIdx+1};}
+function yearCanChi(lunarYear){const canIdx=(lunarYear+6)%10,chiIdx=(lunarYear+8)%12;return {yearCan:CAN[canIdx],yearChi:CHI[chiIdx],yearCanIndex:canIdx+1};}
+function monthCanChi(lunarMonth,yearCanIndex){let base;if(yearCanIndex===1||yearCanIndex===6)base=3;else if(yearCanIndex===2||yearCanIndex===7)base=5;else if(yearCanIndex===3||yearCanIndex===8)base=7;else if(yearCanIndex===4||yearCanIndex===9)base=9;else base=1;const stemIdx=mod1(base+(lunarMonth-1),10);const branchIdx=mod1(lunarMonth+2,12);return {monthCan:CAN[stemIdx-1],monthChi:CHI[branchIdx-1]};}
+function hourCanChi(dayCanIndex,hourBranchIdx){let base;if(dayCanIndex===1||dayCanIndex===6)base=1;else if(dayCanIndex===2||dayCanIndex===7)base=3;else if(dayCanIndex===3||dayCanIndex===8)base=5;else if(dayCanIndex===4||dayCanIndex===9)base=7;else base=9;const stemIdx=mod1(base+(hourBranchIdx-1),10);return {hourCan:CAN[stemIdx-1],hourChi:CHI[hourBranchIdx-1]};}
+
+// 64 Quẻ
+const HEX_NAMES=[[],
+["Càn Vi Thiên","乾為天","Thuần dương, sáng suốt, tự cường, đại cát."],
+["Phong Thiên Tiểu Súc","風天小畜","Tích tụ nhỏ, chờ thời, thuận trung."],
+["Hỏa Thiên Đại Hữu","火天大有","Đại phú, thịnh vượng, có danh vọng."],
+["Trạch Thiên Quải","澤天夬","Quyết đoán, dứt bỏ điều xấu, thuận lợi."],
+["Sơn Thiên Đại Súc","山天大畜","Tích đức, tiềm tàng sức mạnh, chờ thời cơ."],
+["Thủy Thiên Nhu","水天需","Chờ đợi thuận thời, giữ đạo mà thành."],
+["Lôi Thiên Đại Tráng","雷天大壯","Cường tráng, tự tin, hành động lớn."],
+["Địa Thiên Thái","地天泰","Thời thông suốt, âm dương hòa hợp, đại cát."],
+["Thiên Trạch Lý","天澤履","Cẩn trọng, hành sự có kỷ cương, giữ đạo trung dung."],
+["Phong Trạch Trung Phu","風澤中孚","Thành tín, trung thực, được lòng người."],
+["Hỏa Trạch Khuê","火澤睽","Khác ý, đối nghịch, cần hòa giải."],
+["Trạch Vi Đoài","兌為澤","Vui vẻ, hòa thuận, thuận lợi nhỏ."],
+["Sơn Trạch Tổn","山澤損","Giảm bớt, tiết chế, để lâu bền."],
+["Thủy Trạch Tiết","水澤節","Tiết độ, biết dừng, tránh vượt giới hạn."],
+["Lôi Trạch Quy Muội","雷澤歸妹","Kết hợp sai thời, cẩn trọng."],
+["Địa Trạch Lâm","地澤臨","Có người giúp, thời cơ đến, cát."],
+["Thiên Hỏa Đồng Nhân","天火同人","Đồng lòng, đồng chí, đại cát."],
+["Phong Hỏa Gia Nhân","風火家人","Gia đạo hòa thuận, trị nhà có phép."],
+["Ly Vi Hỏa","離為火","Sáng suốt, thông minh, dễ phân tán."],
+["Trạch Hỏa Cách","澤火革","Cải cách, đổi mới, chuyển thời vận."],
+["Sơn Hỏa Bí","山火賁","Trang sức, đẹp đẽ, thích hợp nhỏ."],
+["Thủy Hỏa Ký Tế","水火既濟","Hoàn tất, việc lớn thành, thuận lợi."],
+["Lôi Hỏa Phong","雷火豐","Thịnh vượng, sáng rõ, dễ tự mãn."],
+["Địa Hỏa Minh Di","地火明夷","Ẩn minh, giữ mình, tránh nguy hiểm."],
+["Thiên Lôi Vô Vọng","天雷无妄","Chớ vọng động, tránh sai lầm."],
+["Phong Lôi Ích","風雷益","Được lợi, tiến triển, thêm tài lộc."],
+["Hỏa Lôi Phệ Hạp","火雷噬嗑","Giải quyết, công chính thắng."],
+["Trạch Lôi Tùy","澤雷隨","Tùy thuận thời thế, cát."],
+["Sơn Lôi Di","山雷頤","Dưỡng đạo, nuôi chí, lấy chính mà bền."],
+["Thủy Lôi Truân","水雷屯","Khởi đầu gian nan, kiên nhẫn vượt khó."],
+["Chấn Vi Lôi","震為雷","Động, khai mở, nhưng chớ nóng vội."],
+["Địa Lôi Phục","地雷復","Phục hồi, trở lại chính đạo, cát."],
+["Thiên Phong Cấu","天風姤","Bất ngờ gặp gỡ, nên giữ lễ."],
+["Tốn Vi Phong","巽為風","Uyển chuyển, thuận theo, hanh thông."],
+["Hỏa Phong Đỉnh","火風鼎","Cải cách, hưng thịnh, đại cát."],
+["Trạch Phong Đại Quá","澤風大過","Quá mức, cần tiết chế, nguy cơ tiềm ẩn."],
+["Sơn Phong Cổ","山風蠱","Sửa lỗi cũ, cải hóa, trung cát."],
+["Thủy Phong Tỉnh","水風井","Nguồn gốc bền, nhân nghĩa, ổn định."],
+["Lôi Phong Hằng","雷風恆","Bền lâu, giữ đạo chính, đại cát."],
+["Địa Phong Thăng","地風升","Thăng tiến, từng bước, thuận lợi."],
+["Thiên Thủy Tụng","天水訟","Tranh tụng, nên nhường, cẩn trọng."],
+["Phong Thủy Hoán","風水渙","Tan rã, phân tán, rồi lại hợp."],
+["Hỏa Thủy Vị Tế","火水未濟","Chưa hoàn tất, cần kiên trì."],
+["Trạch Thủy Khốn","澤水困","Khó khăn, giữ chính thì vượt qua."],
+["Sơn Thủy Mông","山水蒙","Mông muội, học đạo, khai mở."],
+["Khảm Vi Thủy","坎為水","Hiểm trở, kiên trì vượt qua."],
+["Lôi Thủy Giải","雷水解","Giải trừ, cứu nguy, cát."],
+["Địa Thủy Sư","地水師","Chỉ huy, có tổ chức, công chính."],
+["Thiên Sơn Độn","天山遯","Rút lui, giữ mình, thuận lợi khi thoái."],
+["Phong Sơn Tiệm","風山漸","Tiến dần, ổn định, cát."],
+["Hỏa Sơn Lữ","火山旅","Ly hương, gian truân, có quý nhân."],
+["Trạch Sơn Hàm","澤山咸","Cảm ứng, tình cảm, hòa hợp."],
+["Cấn Vi Sơn","艮為山","Dừng lại, biết đủ, an ổn."],
+["Thủy Sơn Kiển","水山蹇","Trắc trở, vượt khó, trung cát."],
+["Lôi Sơn Tiểu Quá","雷山小過","Nhỏ quá, chớ mạo hiểm, giữ an."],
+["Địa Sơn Khiêm","地山謙","Khiêm tốn, nhu thuận, đại cát."],
+["Thiên Địa Bĩ","天地否","Bế tắc, âm thịnh, giữ đạo chờ thời."],
+["Phong Địa Quan","風地觀","Quan sát, tĩnh lặng, học hiểu đạo."],
+["Hỏa Địa Tấn","火地晉","Tiến lên, thăng chức, đại cát."],
+["Trạch Địa Tụy","澤地萃","Tụ họp, đồng lòng, đại lợi."],
+["Sơn Địa Bác","山地剝","Tổn hao, tan rã, chớ hành động."],
+["Thủy Địa Tỷ","水地比","Thân cận, hợp tác, cát."],
+["Lôi Địa Dự","雷地豫","Vui vẻ, chuẩn bị, đừng quá đà."],
+["Khôn Vi Địa","坤為地","Thuần âm, thuận theo, nhu mà thắng."]
+];
+
+function getHexIndices(dayAm,monthAm,hourChi,variant){
+  const moving=((monthAm+dayAm+hourChi-1)%6)+1;
+  let upperN,lowerN,up,lo;
+  if(variant==="B"){upperN=((monthAm+hourChi-1)%8)+1;lowerN=((dayAm+monthAm-1)%8)+1;up=MAP_B_UPPER[upperN];lo=MAP_B_LOWER[lowerN];}
+  else{upperN=((monthAm+dayAm-1)%8)+1;lowerN=((dayAm+hourChi-1)%8)+1;up=MAP_A_UPPER[upperN];lo=MAP_A_LOWER[lowerN];}
+  return {upper:up,lower:lo,moving};
 }
 
-// ===== Tính quẻ + Can Chi =====
 function calc(){
   const solar=document.getElementById("solarDate").value;
   const time=document.getElementById("solarTime").value;
@@ -94,41 +174,42 @@ function calc(){
   const iana=document.getElementById("iana").value;
   const useVN=document.getElementById("vnStd").checked;
   const tz=useVN?7:offsetHoursAt(iana,y,m,d,hh,mm);
+  const variant=document.getElementById("variant").value;
 
-  // Âm lịch theo múi giờ (DST-safe)
-  const [dayAm,monthAm,yearAm,leap]=AmLich.convertSolar2Lunar(d,m,y,tz);
+  const [dayAm,monthAm,yearAm]=AmLich.convertSolar2Lunar(d,m,y,tz);
+  const chiHour=chiIndexFromHour(hh);
+  console.log(`Hour: ${chiHour}`);
+  const {dayCan,dayChi,dayCanIndex}=dayCanChi(d,m,y);
+  const {yearCan,yearChi,yearCanIndex}=yearCanChi(yearAm);
+  const {monthCan,monthChi}=monthCanChi(monthAm,yearCanIndex);
+  const {hourCan,hourChi}=hourCanChi(dayCanIndex,chiHour);
+  const {upper,lower,moving}=getHexIndices(dayAm,monthAm,chiHour,variant);
 
-  // Can–Chi
-  const {dayCan, dayChi, dayCanIndex}=dayCanChi(d,m,y); // ngày theo lịch địa phương người dùng đã nhập
-  const {yearCan, yearChi, yearCanIndex}=yearCanChi(yearAm);
-  const {monthCan, monthChi}=monthCanChi(monthAm, yearCanIndex);
-  const chiHourIdx=chiIndexFromHour(hh);
-  const {hourCan, hourChi}=hourCanChi(dayCanIndex, chiHourIdx);
-
-  // Quẻ chủ
-  const upper=mod1(monthAm+dayAm,8);
-  const lower=mod1(dayAm+chiHourIdx,8);
-  const moving=mod1(monthAm+dayAm+chiHourIdx,6);
-  const lines=buildHex(lower,upper);
-  const mainName=getHexName(upper,lower);
-
-  // Quẻ biến
+  const lines=build(lower,upper);
   const changed=mutate(lines,moving);
-  const lower2=trigramIndex(changed.slice(0,3));
-  const upper2=trigramIndex(changed.slice(3,6));
-  const changeName=getHexName(upper2,lower2);
 
-  // Output
-  let out=`Ngày dương: ${d}/${m}/${y} ${String(hh).padStart(2,"0")}:${String(mm).padStart(2,"0")}\n`;
-  out+=`Âm lịch: ${dayAm}/${monthAm}${leap?" (nhuận)":""}/${yearAm}\n`;
-  out+=`Múi giờ: ${useVN?"VN (UTC+7)":iana} (offset ${tz})\n\n`;
-  out+=`🕓 Can Chi:\n`;
-  out+=`  Giờ: ${hourCan} ${hourChi}\n`;
-  out+=`  Ngày: ${dayCan} ${dayChi}\n`;
-  out+=`  Tháng: ${monthCan} ${monthChi}\n`;
-  out+=`  Năm: ${yearCan} ${yearChi}\n\n`;
-  out+=`🔹 Quẻ chủ: ${mainName[1]} (${mainName[2]})\n${render(lines,moving)}\n`;
-  out+=`🔸 Quẻ biến: ${changeName[1]} (${changeName[2]})\n${render(changed,0)}`;
+  // SUY RA THƯỢNG/HẠ TỪ HÌNH HÀO (đảm bảo tên khớp hình)
+  const lowerFromLines  = trigramIndex(lines.slice(0,3));
+  const upperFromLines  = trigramIndex(lines.slice(3,6));
+  const lower2FromLines = trigramIndex(changed.slice(0,3));
+  const upper2FromLines = trigramIndex(changed.slice(3,6));
+
+  // Tra tên quẻ từ bảng 64 quẻ theo THỨ TỰ KINH ĐIỂN
+  const idx1 = (upperFromLines - 1) * 8 + lowerFromLines;
+  const idx2 = (upper2FromLines - 1) * 8 + lower2FromLines;
+  const main = HEX_NAMES[idx1];
+  const changedHex = HEX_NAMES[idx2];
+
+  if (upperFromLines !== upper || lowerFromLines !== lower) {
+    console.warn("⚠️ Mismatch mapping:",
+      {calcUpper: upper, calcLower: lower, fromLinesUpper: upperFromLines, fromLinesLower: lowerFromLines}
+    );
+  }
+
+  let out=`Ngày dương: ${d}/${m}/${y} ${String(hh).padStart(2,"0")}:${String(mm).padStart(2,"0")}\nÂm lịch: ${dayAm}/${monthAm}/${yearAm}\nMúi giờ: ${useVN?"VN (UTC+7)":iana}\n\n`;
+  out+=`🕓 Can Chi:\n  Giờ: ${hourCan} ${hourChi}\n  Ngày: ${dayCan} ${dayChi}\n  Tháng: ${monthCan} ${monthChi}\n  Năm: ${yearCan} ${yearChi}\n\n`;
+  out+=`🔹 Quẻ chủ: ${main[0]} (${main[1]})\n${render(lines,moving)}✨ ${main[2]}\n\n`;
+  out+=`🔸 Quẻ biến: ${changedHex[0]} (${changedHex[1]})\n${render(changed,0)}✨ ${changedHex[2]}`;
   document.getElementById("out").textContent=out;
 }
 </script>
