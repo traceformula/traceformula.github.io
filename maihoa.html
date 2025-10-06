@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Mai Hoa Dịch Số (Offline Hoàn Chỉnh)</title>
+
+<!-- ====== Thư viện âm lịch đầy đủ ====== -->
+<script>
+var AmLich = {
+  INT: Math.floor,
+  jdFromDate: function(dd, mm, yy) {
+    var a = this.INT((14 - mm) / 12);
+    var y = yy + 4800 - a;
+    var m = mm + 12 * a - 3;
+    var jd = dd + this.INT((153 * m + 2) / 5) + 365 * y + this.INT(y / 4) - this.INT(y / 100) + this.INT(y / 400) - 32045;
+    if (jd < 2299161) jd = dd + this.INT((153 * m + 2) / 5) + 365 * y + this.INT(y / 4) - 32083;
+    return jd;
+  },
+  NewMoon: function(k) {
+    var T = k / 1236.85, T2 = T * T, T3 = T2 * T, dr = Math.PI / 180;
+    var Jd1 = 2415020.75933 + 29.53058868 * k + 0.0001178 * T2 - 0.000000155 * T3;
+    Jd1 += 0.00033 * Math.sin((166.56 + 132.87 * T - 0.009173 * T2) * dr);
+    var M = 359.2242 + 29.10535608 * k - 0.0000333 * T2 - 0.00000347 * T3;
+    var Mpr = 306.0253 + 385.81691806 * k + 0.0107306 * T2 + 0.00001236 * T3;
+    var F = 21.2964 + 390.67050646 * k - 0.0016528 * T2 - 0.00000239 * T3;
+    var C1 = (0.1734 - 0.000393 * T) * Math.sin(M * dr) + 0.0021 * Math.sin(2 * dr * M);
+    C1 -= 0.4068 * Math.sin(Mpr * dr) + 0.0161 * Math.sin(2 * dr * Mpr);
+    C1 += 0.0104 * Math.sin(2 * dr * F) - 0.0051 * Math.sin(dr * (M + Mpr));
+    var deltat = (T < -11) ? 0.001 + 0.000839*T + 0.0002261*T2 - 0.00000845*T3 - 0.000000081*T*T3
+                           : -0.000278 + 0.000265*T + 0.000262*T2;
+    return Jd1 + C1 - deltat;
+  },
+  SunLongitude: function(jdn) {
+    var T = (jdn - 2451545.0) / 36525;
+    var dr = Math.PI/180;
+    var M = 357.52910 + 35999.05030*T - 0.0001559*T*T - 0.00000048*T*T*T;
+    var L0 = 280.46645 + 36000.76983*T + 0.0003032*T*T;
+    var DL = (1.914600 - 0.004817*T - 0.000014*T*T)*Math.sin(dr*M);
+    DL += (0.019993 - 0.000101*T)*Math.sin(2*dr*M) + 0.000290*Math.sin(3*dr*M);
+    var L = L0 + DL;
+    L = L*dr;
+    L = L - Math.PI*2*(Math.floor(L/(Math.PI*2)));
+    return L;
+  },
+  getSunLongitude: function(dayNumber, timeZone) {
+    return Math.floor(this.SunLongitude(dayNumber - 0.5 - timeZone/24) / Math.PI * 6);
+  },
+  getNewMoonDay: function(k, timeZone) {
+    return Math.floor(this.NewMoon(k) + 0.5 + timeZone/24);
+  },
+  getLunarMonth11: function(yy, timeZone) {
+    var off = this.jdFromDate(31, 12, yy) - 2415021;
+    var k = Math.floor(off / 29.530588853);
+    var nm = this.getNewMoonDay(k, timeZone);
+    var sunLong = this.getSunLongitude(nm, timeZone);
+    if (sunLong >= 9) nm = this.getNewMoonDay(k - 1, timeZone);
+    return nm;
+  },
+  getLeapMonthOffset: function(a11, timeZone) {
+    var k = Math.floor((a11 - 2415021.076998695) / 29.530588853 + 0.5);
+    var last, i = 1, arc = this.getSunLongitude(this.getNewMoonDay(k + i, timeZone), timeZone);
+    do {
+      last = arc;
+      i++;
+      arc = this.getSunLongitude(this.getNewMoonDay(k + i, timeZone), timeZone);
+    } while (arc != last && i < 14);
+    return i - 1;
+  },
+  convertSolar2Lunar: function(dd, mm, yy, timeZone) {
+    var dayNumber = this.jdFromDate(dd, mm, yy);
+    var k = Math.floor((dayNumber - 2415021.076998695) / 29.530588853);
+    var monthStart = this.getNewMoonDay(k + 1, timeZone);
+    if (monthStart > dayNumber) monthStart = this.getNewMoonDay(k, timeZone);
+    var a11 = this.getLunarMonth11(yy, timeZone);
+    var b11 = a11;
+    var lunarYear;
+    if (a11 >= monthStart) {
+      a11 = this.getLunarMonth11(yy - 1, timeZone);
+      lunarYear = yy;
+    } else {
+      b11 = this.getLunarMonth11(yy + 1, timeZone);
+      lunarYear = yy + 1;
+    }
+    var lunarDay = dayNumber - monthStart + 1;
+    var diff = Math.floor((monthStart - a11) / 29);
+    var lunarLeap = 0, lunarMonth = diff + 11;
+    if (b11 - a11 > 365) {
+      var leapMonthDiff = this.getLeapMonthOffset(a11, timeZone);
+      if (diff >= leapMonthDiff) {
+        lunarMonth = diff + 10;
+        if (diff == leapMonthDiff) lunarLeap = 1;
+      }
+    }
+    if (lunarMonth > 12) lunarMonth -= 12;
+    if (lunarMonth >= 11 && diff < 4) lunarYear -= 1;
+    return [lunarDay, lunarMonth, lunarYear, lunarLeap];
+  }
+};
+</script>
+</head>
+
+<body>
+<h2>Lập quẻ Mai Hoa Dịch Số (có chọn giờ)</h2>
+
+<label>Ngày dương: <input type="date" id="solarDate"></label><br>
+<label>Giờ (hh:mm): <input type="time" id="solarTime" value="12:00"></label><br>
+<label>Múi giờ:
+  <select id="tz">
+    <option value="7">Việt Nam (GMT+7)</option>
+    <option value="-5">Mỹ (New York, GMT-5)</option>
+    <option value="-8">Mỹ (California, GMT-8)</option>
+  </select>
+</label><br>
+<button onclick="calcHexagram()">Lập quẻ</button>
+
+<pre id="output"></pre>
+
+<script>
+// ====== Lập quẻ ======
+const TRIGRAMS = {
+  1:{vn:"Càn",symbol:"☰",lines:[1,1,1]},
+  2:{vn:"Đoài",symbol:"☱",lines:[1,1,0]},
+  3:{vn:"Ly",symbol:"☲",lines:[1,0,1]},
+  4:{vn:"Chấn",symbol:"☳",lines:[1,0,0]},
+  5:{vn:"Tốn",symbol:"☴",lines:[0,1,1]},
+  6:{vn:"Khảm",symbol:"☵",lines:[0,1,0]},
+  7:{vn:"Cấn",symbol:"☶",lines:[0,0,1]},
+  8:{vn:"Khôn",symbol:"☷",lines:[0,0,0]},
+};
+
+function chiIndexFromHour(hour){
+  if(hour===23||hour===0)return 1;
+  if(hour<=2)return 2; if(hour<=4)return 3; if(hour<=6)return 4;
+  if(hour<=8)return 5; if(hour<=10)return 6; if(hour<=12)return 7;
+  if(hour<=14)return 8; if(hour<=16)return 9; if(hour<=18)return 10;
+  if(hour<=20)return 11; return 12;
+}
+function mod1(x,m){let r=x%m;return r===0?m:r;}
+function buildHexagram(lower,upper){return [...TRIGRAMS[lower].lines,...TRIGRAMS[upper].lines];}
+function mutate(lines,moving){const o=[...lines];o[moving-1]=o[moving-1]?0:1;return o;}
+function render(lines,m){const s=v=>v?"───────":"── ──";let t="";for(let i=6;i>=1;i--){t+=i+" | "+s(lines[i-1]);if(i===m)t+=" ⇢ động";t+="\n";}return t;}
+
+function calcHexagram(){
+  const solar=document.getElementById("solarDate").value;
+  const time=document.getElementById("solarTime").value;
+  if(!solar){alert("Chọn ngày!");return;}
+  const [y,m,d]=solar.split("-").map(Number);
+  const [hh,mm]=time.split(":").map(Number);
+  const tz=parseFloat(document.getElementById("tz").value);
+
+  const chi=chiIndexFromHour(hh);
+
+  const am=AmLich.convertSolar2Lunar(d,m,y,tz);
+  const dayAm=am[0],monthAm=am[1],yearAm=am[2],leap=am[3];
+
+  const upper=mod1(monthAm+dayAm,8);
+  const lower=mod1(dayAm+chi,8);
+  const moving=mod1(monthAm+dayAm+chi,6);
+  const lines=buildHexagram(lower,upper);
+  const changed=mutate(lines,moving);
+
+  let out=`Ngày dương: ${d}/${m}/${y} ${hh}:${mm}\n`;
+  out+=`Âm lịch: ${dayAm}/${monthAm}${leap?" (nhuận)":""}/${yearAm}\n`;
+  out+=`Giờ: ${hh}h → địa chi ${chi}\n`;
+  out+=`Quẻ Thượng: ${TRIGRAMS[upper].vn} ${TRIGRAMS[upper].symbol}\n`;
+  out+=`Quẻ Hạ    : ${TRIGRAMS[lower].vn} ${TRIGRAMS[lower].symbol}\n`;
+  out+=`Hào động : ${moving}\n\n`;
+  out+="Quẻ chủ:\n"+render(lines,moving);
+  out+="\nQuẻ biến:\n"+render(changed,0);
+
+  document.getElementById("output").textContent=out;
+}
+</script>
+</body>
+</html>
