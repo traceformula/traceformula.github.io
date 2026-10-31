@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Note Reader</title>
+<meta name="description" content="Free sheet-music reading trainer: learn treble and bass clef notes fast.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Music&display=block">
+<link rel="stylesheet" href="../shared/base.css">
+</head>
+<body>
+<header class="top">
+  <h1>Note Reader</h1>
+  <nav class="tabs" role="tablist" aria-label="Answer with">
+    <button class="tab" data-answer="letters" role="tab">Name it</button>
+    <button class="tab" data-answer="keys" role="tab">Find the key</button>
+  </nav>
+</header>
+
+<main>
+  <section class="panel">
+    <div class="options">
+      <label>Level <select id="level"></select></label>
+      <label class="chk"><input type="checkbox" id="optAuto"> Auto-next</label>
+      <label class="chk"><input type="checkbox" id="optSound"> Play the note</label>
+    </div>
+
+    <div id="levelUp" class="banner" hidden></div>
+
+    <div class="prompt" id="prompt" aria-live="polite"></div>
+    <div id="staff"></div>
+    <div id="letters"></div>
+    <div id="keyboard"></div>
+
+    <div class="controls" style="margin-top:14px;margin-bottom:0">
+      <button id="btnNext">Next <kbd>Enter</kbd></button>
+    </div>
+
+    <div class="score">
+      <span>Session <b id="sScore">0 / 0</b></span>
+      <span>Streak <b id="sStreak">0</b></span>
+      <span>Avg time <b id="sTime">–</b></span>
+      <span>Best <b id="sBest">0</b></span>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Progress</h2>
+      <button id="btnReset" class="ghost">Reset</button>
+    </div>
+    <div id="stats"></div>
+  </section>
+
+  <section class="panel help">
+    <h2>Memory aids</h2>
+    <ul>
+      <li><b>Treble clef lines</b> (bottom to top) are E G B D F: <i>Every Good Boy Does Fine</i>. The <b>spaces</b> spell <i>FACE</i>.</li>
+      <li><b>Bass clef lines</b> are G B D F A: <i>Good Boys Do Fine Always</i>. The <b>spaces</b> are A C E G: <i>All Cows Eat Grass</i>.</li>
+      <li><b>Middle C</b> sits on one ledger line, below the treble staff or above the bass staff.</li>
+      <li>Aim for speed as well as accuracy: answering correctly in under 2 seconds means you can read it while playing.</li>
+      <li>Use <b>Find the key</b> to learn where each note is on the piano, including which octave.</li>
+    </ul>
+    <p class="muted">Keys: press <kbd>C D E F G A B</kbd> to name a note, and hold <kbd>Shift</kbd> for a sharp (<kbd>Shift</kbd>+<kbd>D</kbd> = D♯).</p>
+  </section>
+</main>
+
+<footer class="muted">Free and open source · no tracking · your progress stays in this browser</footer>
+
+<script src="../shared/piano-audio.js"></script>
+<script src="../shared/drill.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

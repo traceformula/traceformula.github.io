@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ear Trainer</title>
-<meta name="description" content="Free ear training in your browser: learn to recognize notes and intervals by ear.">
-<link rel="stylesheet" href="style.css">
+<meta name="description" content="Free ear training in your browser: recognize notes, intervals and melodies by ear.">
+<link rel="stylesheet" href="../shared/base.css">
 </head>
 <body>
 <header class="top">
@@ -13,6 +13,7 @@
   <nav class="tabs" role="tablist">
     <button class="tab" data-mode="note" role="tab">Notes</button>
     <button class="tab" data-mode="interval" role="tab">Intervals</button>
+    <button class="tab" data-mode="melody" role="tab">Melodies</button>
   </nav>
 </header>
 
@@ -67,14 +68,17 @@
       <li>Before answering, sing or hum the note. If you can sing it, you'll recognize it.</li>
       <li>When you get one wrong, you'll hear your choice. Compare it with the right answer.</li>
       <li>When you score 90% on the last 20 questions, move up a level.</li>
-      <li>The <b>Für Elise</b> level in Notes trains the six notes that open the piece.</li>
+      <li>The <b>Für Elise</b> levels in Notes and Melodies train the notes and phrases of the piece you're learning.</li>
+      <li>In <b>Melodies</b>, the first note is given. Sing the melody back in your head, then play it note by note.</li>
     </ul>
-    <p class="muted">Keys: <kbd>A W S E D F T G Y H U J</kbd> = C to B, <kbd>1</kbd>–<kbd>9</kbd> pick an interval. On iPhone, turn off silent mode to hear sound.</p>
+    <p class="muted">Keys: <kbd>A W S E D F T G Y H U J</kbd> = C to B, <kbd>K O L P ;</kbd> = C to E an octave higher (Melodies), <kbd>1</kbd>–<kbd>9</kbd> pick an interval. No sound on iPhone? Turn up the media volume. It should work in silent mode too.</p>
   </section>
 </main>
 
 <footer class="muted">Free and open source · no tracking · your progress stays in this browser</footer>
 
+<script src="../shared/piano-audio.js"></script>
+<script src="../shared/drill.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
