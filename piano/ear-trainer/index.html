@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ear Trainer</title>
+<meta name="description" content="Free ear training in your browser: learn to recognize notes and intervals by ear.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <h1>Ear Trainer</h1>
+  <nav class="tabs" role="tablist">
+    <button class="tab" data-mode="note" role="tab">Notes</button>
+    <button class="tab" data-mode="interval" role="tab">Intervals</button>
+  </nav>
+</header>
+
+<main>
+  <section class="panel">
+    <div class="options">
+      <label>Level <select id="level"></select></label>
+      <label class="chk" id="refWrap"><input type="checkbox" id="optRef"> Play reference C first</label>
+      <label id="dirWrap">Direction
+        <select id="optDir">
+          <option value="up">Ascending</option>
+          <option value="down">Descending</option>
+          <option value="harm">Together</option>
+          <option value="mix">Mixed</option>
+        </select>
+      </label>
+      <label class="chk"><input type="checkbox" id="optAuto"> Auto-next</label>
+    </div>
+
+    <div id="levelUp" class="banner" hidden></div>
+
+    <div class="prompt" id="prompt" aria-live="polite">Press <b>Start</b>, listen, then pick your answer.</div>
+
+    <div class="controls">
+      <button id="btnStart" class="primary">Start</button>
+      <button id="btnReplay" disabled>Replay <kbd>Space</kbd></button>
+      <button id="btnRef" disabled>Hear C <kbd>R</kbd></button>
+      <button id="btnNext" disabled>Next <kbd>Enter</kbd></button>
+    </div>
+
+    <div id="answers"></div>
+
+    <div class="score">
+      <span>Session <b id="sScore">0 / 0</b></span>
+      <span>Streak <b id="sStreak">0</b></span>
+      <span>Best <b id="sBest">0</b></span>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Progress</h2>
+      <button id="btnReset" class="ghost">Reset</button>
+    </div>
+    <div id="stats"></div>
+  </section>
+
+  <section class="panel help">
+    <h2>How to practise</h2>
+    <ul>
+      <li>Do 10 minutes a day. Short daily practice works better than one long session a week.</li>
+      <li>Before answering, sing or hum the note. If you can sing it, you'll recognize it.</li>
+      <li>When you get one wrong, you'll hear your choice. Compare it with the right answer.</li>
+      <li>When you score 90% on the last 20 questions, move up a level.</li>
+      <li>The <b>Für Elise</b> level in Notes trains the six notes that open the piece.</li>
+    </ul>
+    <p class="muted">Keys: <kbd>A W S E D F T G Y H U J</kbd> = C to B, <kbd>1</kbd>–<kbd>9</kbd> pick an interval. On iPhone, turn off silent mode to hear sound.</p>
+  </section>
+</main>
+
+<footer class="muted">Free and open source · no tracking · your progress stays in this browser</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
