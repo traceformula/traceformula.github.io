@@ -260,12 +260,12 @@
     // Skipping a melody after trying it counts as a miss.
     if (q && state.mode === 'melody' && !q.done && q.touched) { record(false); renderScore(); renderStats(); }
     newQuestion();
-    const prompts = {
-      note: state.ref ? 'You\'ll hear C first, then the mystery note. Which note is it?' : 'Which note is this?',
-      interval: 'Which interval is this?',
-      melody: `Listen to the melody. The first note (${noteName(q.notes[0])}) is given. Play the rest in order.`,
+    const prompts = { // functions: only the current mode's prompt may read q's mode-specific fields
+      note: () => (state.ref ? 'You\'ll hear C first, then the mystery note. Which note is it?' : 'Which note is this?'),
+      interval: () => 'Which interval is this?',
+      melody: () => `Listen to the melody. The first note (${noteName(q.notes[0])}) is given. Play the rest in order.`,
     };
-    setPrompt(prompts[state.mode]);
+    setPrompt(prompts[state.mode]());
     renderAnswers();
     playQuestion();
   }
