@@ -45,12 +45,41 @@
     ref: true, dir: 'up', auto: true, best: 0,
     stats: { note: {}, interval: {} }, recent: {},
   });
+  // Storage is shared by every page on this origin, so treat it as untrusted:
+  // keep only known keys with values of the expected type.
+  const int = (v, lo, hi, d) => (Number.isInteger(v) && v >= lo && v <= hi ? v : d);
+  function cleanStats(src, mode) {
+    const out = {};
+    const keys = LEVELS[mode][LEVELS[mode].length - 1].pool;
+    for (const k of keys) {
+      const s = src && src[k];
+      if (!s) continue;
+      const t = int(s.t, 0, 1e9, 0);
+      out[k] = { t, r: int(s.r, 0, t, 0) };
+    }
+    return out;
+  }
   function load() {
+    const d = defaults();
     try {
       const s = JSON.parse(localStorage.getItem(STORE));
-      if (s && s.stats) return Object.assign(defaults(), s);
-    } catch (e) { /* storage unavailable */ }
-    return defaults();
+      if (!s || typeof s !== 'object') return d;
+      d.mode = s.mode === 'interval' ? 'interval' : 'note';
+      for (const m of ['note', 'interval']) {
+        d.level[m] = int(s.level && s.level[m], 0, LEVELS[m].length - 1, 0);
+        d.stats[m] = cleanStats(s.stats && s.stats[m], m);
+      }
+      d.ref = s.ref !== false;
+      d.auto = s.auto !== false;
+      d.dir = ['up', 'down', 'harm', 'mix'].includes(s.dir) ? s.dir : 'up';
+      d.best = int(s.best, 0, 1e9, 0);
+      for (const [k, arr] of Object.entries(s.recent || {})) {
+        if (/^(note|interval):\d$/.test(k) && Array.isArray(arr)) {
+          d.recent[k] = arr.slice(-RECENT_N).map(x => (x === 1 ? 1 : 0));
+        }
+      }
+    } catch (e) { /* storage unavailable or corrupt */ }
+    return d;
   }
   function save() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) { /* ignore */ } }
 
