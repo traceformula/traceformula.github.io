@@ -418,7 +418,7 @@
   });
   document.addEventListener('keydown', e => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
-    if (e.target.matches('select, input, textarea')) return;
+    if ((e.target.matches && e.target.matches('select, input, textarea'))) return;
     const k = e.key.toLowerCase();
     if (k === ' ') { e.preventDefault(); q ? playQuestion() : start(); return; }
     if (k === 'enter') { e.preventDefault(); q ? next() : start(); return; }

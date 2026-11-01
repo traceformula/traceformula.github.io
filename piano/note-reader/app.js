@@ -279,7 +279,7 @@
   });
   document.addEventListener('keydown', e => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
-    if (e.target.matches('select, input, textarea')) return;
+    if ((e.target.matches && e.target.matches('select, input, textarea'))) return;
     if (e.key === 'Enter') { e.preventDefault(); newQuestion(); return; }
     if (state.answer !== 'letters' || !q || q.done) return;
     const L = e.key.toUpperCase();

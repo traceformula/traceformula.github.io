@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fingering Coach</title>
+<meta name="description" content="Free piano fingering trainer: which finger goes on which key, hand positions, thumb-under and position shifts.">
+<link rel="stylesheet" href="../shared/base.css?v=0e8077a">
+<meta name="app-version" content="0e8077a">
+<script src="../shared/update.js?v=0e8077a"></script>
+<style>
+  .stage { display: grid; grid-template-columns: 200px 1fr; gap: 16px; align-items: end; margin-bottom: 12px; }
+  @media (max-width: 560px) { .stage { grid-template-columns: 1fr; } .hand { max-width: 180px; margin: 0 auto; } }
+  .hand { display: block; width: 100%; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+  .hand .palm { fill: var(--line); }
+  .hand .finger { cursor: pointer; }
+  .hand .finger rect { fill: var(--panel); stroke: var(--muted); stroke-width: 1.5; transition: fill .12s; }
+  .hand .finger text { fill: var(--text); font: 600 15px system-ui, sans-serif; text-anchor: middle; pointer-events: none; }
+  .hand .finger.dim rect { opacity: .35; stroke-dasharray: 3 3; }
+  .hand .finger.hi rect { fill: var(--accent); stroke: var(--accent); }
+  .hand .finger.hi text, .hand .finger.good text, .hand .finger.bad text { fill: #fff; }
+  .hand .finger.good rect { fill: var(--good); stroke: var(--good); }
+  .hand .finger.bad rect { fill: var(--bad); stroke: var(--bad); }
+  .hand .hand-label { fill: var(--muted); font: 12px system-ui, sans-serif; text-anchor: middle; }
+  .key.inpos.white { background: color-mix(in srgb, var(--accent) 22%, var(--white-key)); }
+  .key.inpos.black { background: color-mix(in srgb, var(--accent) 45%, var(--black-key)); }
+  .key.hi { background: var(--accent) !important; color: #fff; }
+  .key .fnum { display: block; font-size: 1.15rem; line-height: 1.1; }
+  .seq { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 6px; }
+  .step { min-width: 40px; text-align: center; padding: 4px 6px; border: 1px solid var(--line); border-radius: 8px; }
+  .step b { display: block; }
+  .step small { color: var(--muted); font-weight: 600; }
+  .step.cur { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, transparent); }
+  .step.done { opacity: .55; }
+  .tip { margin: 6px 0 0; }
+  .basics ol { padding-left: 20px; margin: 0 0 10px; }
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Fingering Coach</h1>
+  <nav class="tabs" role="tablist">
+    <button class="tab" data-tab="positions" role="tab">Positions</button>
+    <button class="tab" data-tab="exercises" role="tab">Exercises</button>
+  </nav>
+</header>
+
+<main>
+  <section class="panel">
+    <div class="options">
+      <label id="posWrap">Position <select id="posSel"></select></label>
+      <label id="exWrap">Exercise <select id="exSel"></select></label>
+      <label id="tempoWrap">Speed <select id="tempo"></select></label>
+      <label class="chk" id="showWrap"><input type="checkbox" id="optShow"> Show finger numbers while practising</label>
+    </div>
+
+    <div class="prompt" id="prompt" aria-live="polite"></div>
+
+    <div class="stage">
+      <div id="hand"></div>
+      <div id="keyboard"></div>
+    </div>
+    <div id="seq"></div>
+
+    <div class="controls" style="margin-top:12px;margin-bottom:0">
+      <button id="btnQuiz" class="primary">Quiz me</button>
+      <button id="btnWatch" class="primary">Watch <kbd>Space</kbd></button>
+      <button id="btnPractice">Practice <kbd>Enter</kbd></button>
+    </div>
+    <div class="score" id="score" hidden>
+      <span>Session <b id="sScore">0 / 0</b></span>
+      <span>Streak <b id="sStreak">0</b></span>
+    </div>
+    <p class="muted" id="posStats"></p>
+  </section>
+
+  <section class="panel help basics">
+    <h2>Hand basics</h2>
+    <ol>
+      <li><b>Finger numbers</b> are the same on both hands: 1 = thumb, 2 = index, 3 = middle, 4 = ring, 5 = pinky.</li>
+      <li><b>Sit</b> so your forearms are level with the keys and your elbows hang loosely just in front of your body. Sit on the front half of the bench.</li>
+      <li><b>Curve your fingers</b> as if you're holding a small ball or an orange. Play on the fingertips. Fingers 1 and 5 touch with their sides.</li>
+      <li><b>Keep the wrist level and loose</b>: not drooping below the keys, not raised high. Any tension means slow down.</li>
+      <li><b>One finger per key</b> in a five-finger position. Fingers that aren't playing rest lightly on their keys.</li>
+      <li><b>Thumb under / finger over</b> is how you travel beyond five notes without lifting the hand. Try the C scale exercises.</li>
+    </ol>
+    <p class="muted">No piano yet? Rest your hand on a table in the curved shape. Use <b>Watch</b> at 40–60 BPM and tap the glowing finger. Lifting one finger at a time while the others stay down trains finger independence. Keys: <kbd>1</kbd>–<kbd>5</kbd> pick a finger.</p>
+    <p class="muted">A teacher can check your posture in a few lessons, which an app can't see. Bad habits are much easier to prevent than to fix.</p>
+  </section>
+</main>
+
+<footer class="muted">Free and open source · no tracking · your progress stays in this browser</footer>
+
+<script src="../shared/piano-audio.js?v=0e8077a"></script>
+<script src="../shared/drill.js?v=0e8077a"></script>
+<script src="app.js?v=0e8077a"></script>
+</body>
+</html>
