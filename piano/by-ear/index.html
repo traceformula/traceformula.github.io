@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Play by Ear</title>
-<meta name="description" content="Free ear training with 100+ famous tunes: listen to a melody, then find its notes on the piano.">
-<link rel="stylesheet" href="../shared/base.css?v=2ff52f5">
-<meta name="app-version" content="2ff52f5">
-<script src="../shared/update.js?v=2ff52f5"></script>
+<meta name="description" content="Free ear training with hundreds of famous tunes from around the world: listen to a melody, then find its notes on the piano.">
+<link rel="stylesheet" href="../shared/base.css?v=bdd5021">
+<meta name="app-version" content="bdd5021">
+<script src="../shared/update.js?v=bdd5021"></script>
 <style>
   .slot.hint { border-style: solid; border-color: var(--muted); color: var(--muted); }
   .slot.cur { border-color: var(--accent); border-style: solid; color: var(--accent); }
@@ -31,7 +31,8 @@
 <main>
   <section class="panel">
     <div class="options">
-      <label>Songs <select id="cat">
+      <label>Country <select id="region"></select></label>
+      <label>Type <select id="cat">
         <option value="all">All</option>
         <option value="k">Children's</option>
         <option value="f">Folk &amp; traditional</option>
@@ -90,17 +91,18 @@
       <li>Hum it first. If you can sing it, you can find it: is the next note higher or lower, a small step or a jump?</li>
       <li>Stuck? <b>Next few notes</b> plays just the part you're on. <b>Hint</b> reveals one note and counts as a mistake. After 3 wrong tries a note is revealed for you.</li>
       <li>A song is <b>perfect</b> when you play it with no mistakes and no hints. Songs you haven't got perfect come up more often.</li>
+      <li>Pick a <b>Country</b> to practise tunes from China, France, Germany, India, Italy, Japan, Korea, South America, South Africa, Australia and more.</li>
       <li>Turn off <b>Show the title first</b> to guess the tune too. Turn on <b>Random key</b> once the original keys feel easy.</li>
     </ul>
-    <p class="muted">Keys: <kbd>A W S E D F T G Y H U J K O L P ;</kbd> play the keyboard from its first C upward. Hold <kbd>Shift</kbd> for an octave higher. All tunes are public domain (traditional, or published before 1929). Each one is a short opening phrase, sometimes simplified.</p>
+    <p class="muted">Keys: <kbd>A W S E D F T G Y H U J K O L P ;</kbd> play the keyboard from its first C upward. Hold <kbd>Shift</kbd> for an octave higher. All tunes are public domain (traditional, or published in 1930 or earlier) and were transcribed from published scores where possible. Each one is a short opening phrase, sometimes simplified.</p>
   </section>
 </main>
 
 <footer class="muted">Free and open source · no tracking · your progress stays in this browser</footer>
 
-<script src="../shared/piano-audio.js?v=2ff52f5"></script>
-<script src="../shared/drill.js?v=2ff52f5"></script>
-<script src="songs.js?v=2ff52f5"></script>
-<script src="app.js?v=2ff52f5"></script>
+<script src="../shared/piano-audio.js?v=bdd5021"></script>
+<script src="../shared/drill.js?v=bdd5021"></script>
+<script src="songs.js?v=bdd5021"></script>
+<script src="app.js?v=bdd5021"></script>
 </body>
 </html>

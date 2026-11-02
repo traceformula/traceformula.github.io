@@ -8,6 +8,11 @@
   // ---------- Songs ----------
   const CATS = { k: "Children's", f: 'Folk & traditional', h: 'Holiday', s: 'Hymns & anthems', c: 'Classical' };
   const LEVEL_NAMES = ['', 'Easy', 'Medium', 'Hard'];
+  const REGIONS = {
+    au: 'Australia', cn: 'China', fr: 'France', de: 'Germany', in: 'India', it: 'Italy', jp: 'Japan',
+    kr: 'Korea', ir: 'Persia (Iran)', za: 'South Africa', sa: 'South America', xx: 'Other',
+  };
+  const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
   const PC = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
 
   // "F#4:1.5" -> {m: 66, beats: 1.5}; "r:.5" -> {m: null, beats: .5}
@@ -39,29 +44,30 @@
     return (sum / (ev.length - 1)) * 2 + ev.length / 8 + maxLeap / 6 + distinct / 4;
   }
 
-  const SONGS = window.SONGS.map(([id, title, by, cat, bpm, notes]) => {
+  const SONGS = window.SONGS.map(([id, title, by, cat, bpm, notes, region]) => {
     const ev = parse(notes);
-    return { id, title, by, cat, bpm, ev, score: difficulty(ev) };
+    return { id, title, by, cat, bpm, ev, region: has(REGIONS, region) ? region : 'xx', score: difficulty(ev) };
   });
-  const BY_ID = Object.fromEntries(SONGS.map(s => [s.id, s]));
+  const BY_ID = new Map(SONGS.map(s => [s.id, s]));
   // Split into thirds by difficulty score.
   [...SONGS].sort((a, b) => a.score - b.score).forEach((s, i, arr) => { s.level = 1 + Math.floor((3 * i) / arr.length); });
 
   // ---------- State ----------
   const store = storage('byear.v1');
-  const defaults = () => ({ cat: 'all', diff: 'all', speed: 80, showTitle: true, randomKey: false, stats: {} });
+  const defaults = () => ({ cat: 'all', region: 'all', diff: 'all', speed: 80, showTitle: true, randomKey: false, stats: {} });
   // stats[id] = [plays, perfect, best mistakes (-1 = never finished)]
   function load() {
     const d = defaults();
     const s = store.load();
     if (!s || typeof s !== 'object') return d;
-    if (s.cat === 'all' || Object.prototype.hasOwnProperty.call(CATS, s.cat)) d.cat = s.cat;
+    if (s.cat === 'all' || has(CATS, s.cat)) d.cat = s.cat;
+    if (s.region === 'all' || has(REGIONS, s.region)) d.region = s.region;
     if (['all', '1', '2', '3'].includes(s.diff)) d.diff = s.diff;
     if ([60, 80, 100].includes(s.speed)) d.speed = s.speed;
     if (typeof s.showTitle === 'boolean') d.showTitle = s.showTitle;
     if (typeof s.randomKey === 'boolean') d.randomKey = s.randomKey;
     if (s.stats && typeof s.stats === 'object') {
-      for (const id of Object.keys(BY_ID)) {
+      for (const id of BY_ID.keys()) {
         const v = s.stats[id];
         if (Array.isArray(v) && v.length === 3) {
           d.stats[id] = [int(v[0], 0, 1e6, 0), int(v[1], 0, 1e6, 0), int(v[2], -1, 1e4, -1)];
@@ -80,7 +86,9 @@
 
   // ---------- Picking ----------
   function pool() {
-    return SONGS.filter(s => (state.cat === 'all' || s.cat === state.cat) && (state.diff === 'all' || s.level === +state.diff));
+    return SONGS.filter(s => (state.cat === 'all' || s.cat === state.cat) &&
+      (state.region === 'all' || s.region === state.region) &&
+      (state.diff === 'all' || s.level === +state.diff));
   }
   function pickSong() {
     const all = pool();
@@ -131,7 +139,8 @@
     const s = q.song;
     const lvl = `${LEVEL_NAMES[s.level]} · ${q.ev.length} notes`;
     if (state.showTitle || q.done) return `<b>${esc(s.title)}</b> <span class="meta">${esc(s.by)} · ${lvl}</span>`;
-    return `<b>Mystery tune</b> <span class="meta">${CATS[s.cat]} · ${lvl}</span>`;
+    const where = s.region === 'xx' ? '' : `${REGIONS[s.region]} · `;
+    return `<b>Mystery tune</b> <span class="meta">${where}${CATS[s.cat]} · ${lvl}</span>`;
   }
   function promptQuestion(extra) {
     setPrompt(`${heading()}<br>${extra || `The first note is <b>${noteName(q.ev[0].m)}</b>. Play the rest, one note at a time.`}`);
@@ -287,6 +296,11 @@
   }
 
   function renderOptions() {
+    const count = r => SONGS.filter(s => s.region === r).length;
+    $('region').innerHTML = '<option value="all">All</option>' + Object.keys(REGIONS)
+      .filter(count).map(r => `<option value="${r}">${REGIONS[r]} (${count(r)})</option>`).join('');
+    $('region').value = state.region;
+    if ($('region').value !== state.region) { state.region = 'all'; $('region').value = 'all'; }
     $('cat').value = state.cat;
     $('diff').value = state.diff;
     $('speed').value = String(state.speed);
@@ -315,9 +329,10 @@
   });
   $('songs').addEventListener('click', e => {
     const b = e.target.closest('[data-id]');
-    if (b && BY_ID[b.dataset.id]) startSong(BY_ID[b.dataset.id]);
+    if (b && BY_ID.has(b.dataset.id)) startSong(BY_ID.get(b.dataset.id));
   });
   $('cat').addEventListener('change', e => { state.cat = e.target.value; save(); resetQuestion(); });
+  $('region').addEventListener('change', e => { state.region = e.target.value; save(); resetQuestion(); });
   $('diff').addEventListener('change', e => { state.diff = e.target.value; save(); resetQuestion(); });
   $('speed').addEventListener('change', e => { state.speed = +e.target.value; save(); });
   $('optTitle').addEventListener('change', e => {
