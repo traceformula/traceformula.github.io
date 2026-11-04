@@ -1,227 +1,935 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LaTeX Editor with PDF Export</title>
-    <!-- Include MathJax -->
-    <script type="text/javascript" async
-        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML">
-    </script>
-    <!-- Include html2pdf.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f4;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-        }
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data: https://cdn.jsdelivr.net; connect-src https://cdn.jsdelivr.net; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LaTeX Editor with PDF Export</title>
+<meta name="description" content="A live LaTeX math editor. Type on one side, see it rendered on the other, and download a sharp PDF. Your draft stays in your browser.">
+<link rel="icon" type="image/svg+xml" href="media/favicon.svg">
+<style>
+  :root { --bg:#0d0f14; --ink:#ece9e2; --muted:#a3a5ae; --line:rgba(255,255,255,.15); --card:rgba(20,22,29,.9); --accent:#ffc978; --accent-ink:#1d1508; --err:#ff9d94; --err-bg:rgba(255,120,110,.12);
+          --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif; --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace; }
+  @media (prefers-color-scheme: light) { :root { --bg:#faf9f6; --ink:#1c1c1e; --muted:#5f5f66; --line:rgba(0,0,0,.16); --card:rgba(255,255,255,.93); --accent:#a84a24; --accent-ink:#fff; --err:#b3261e; --err-bg:rgba(179,38,30,.08); } }
+  * { box-sizing:border-box; }
+  html,body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--sans); -webkit-font-smoothing:antialiased; }
+  html,body { height:100%; overflow:hidden; }
+  button,input,textarea { font:inherit; color:inherit; }
+  a { color:var(--accent); }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  .glass { background:var(--card); border:1px solid var(--line); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
+  .btn { background:transparent; border:1px solid var(--line); border-radius:999px; padding:7px 13px; font-size:.86rem; cursor:pointer; white-space:nowrap; min-height:36px; }
+  .btn:hover { border-color:var(--accent); }
+  .btn.primary { background:var(--accent); border-color:var(--accent); color:var(--accent-ink); font-weight:600; }
+  .btn:disabled { opacity:.6; cursor:progress; }
+  .btn.small { padding:3px 10px; min-height:28px; font-size:.8rem; }
+  @media (pointer:coarse) { .btn { min-height:42px; } .btn.small { min-height:36px; } }
 
-        .container {
-            width: 100%;
-            max-width: 800px;
-            text-align: center;
-            margin-top: 20px;
-        }
+  #app { height:100%; height:100dvh; display:flex; flex-direction:column; gap:10px; padding:calc(env(safe-area-inset-top,0px) + 12px) 12px calc(env(safe-area-inset-bottom,0px) + 12px); }
+  #top { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  #home { display:inline-flex; align-items:center; border-radius:999px; padding:8px 13px; font-size:.86rem; color:var(--ink); text-decoration:none; white-space:nowrap; min-height:36px; }
+  #home:hover { border-color:var(--accent); }
+  h1 { font-size:1.05rem; margin:0; letter-spacing:-.01em; font-weight:600; }
+  #actions { display:flex; gap:6px; margin-left:auto; align-items:center; }
 
-        textarea {
-            width: 100%;
-            height: 150px;
-            padding: 10px;
-            font-size: 16px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            margin-bottom: 20px;
-            resize: none;
-            font-family: 'Courier New', Courier, monospace;
-        }
+  #panes { flex:1; min-height:0; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px; }
+  .pane { border-radius:16px; min-height:0; min-width:0; display:flex; flex-direction:column; overflow:hidden; }
+  .head { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 14px; border-bottom:1px solid var(--line); min-height:40px; }
+  .head label, .head h2 { font-size:.76rem; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); font-weight:600; margin:0; }
+  .state { font-size:.8rem; color:var(--muted); text-align:right; }
+  .state.bad { color:var(--err); font-weight:600; }
 
-        #output {
-            margin-top: 20px;
-            padding: 20px;
-            background-color: white;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            width: 100%;
-            min-height: 100px;
-            box-sizing: border-box;
-            white-space: pre-wrap;
-        }
+  #bar { display:flex; gap:5px; padding:7px 10px; border-bottom:1px solid var(--line); overflow-x:auto; scrollbar-width:none; flex:none; }
+  #bar::-webkit-scrollbar { display:none; }
+  #bar .btn { flex:none; font-size:.8rem; padding:3px 11px; }
+  @media (pointer:coarse) { #bar .btn { min-height:42px; padding:3px 13px; } }
+  #latexInput { flex:1; min-height:0; width:100%; display:block; background:transparent; border:0; outline-offset:-3px; resize:none; padding:12px 14px; font-family:var(--mono); font-size:.86rem; line-height:1.55; tab-size:2; }
+  @media (pointer:coarse) { #latexInput { font-size:16px; line-height:1.45; } }
+  #help { margin:0; padding:7px 14px; border-top:1px solid var(--line); font-size:.76rem; color:var(--muted); line-height:1.4; }
+  #help code { font-family:var(--mono); font-size:.95em; }
 
-        /* Hide output from screen readers */
-        #output[aria-hidden="true"] {
-            display: none;
-        }
+  #errors { list-style:none; margin:0; padding:6px; flex:none; max-height:32%; overflow-y:auto; border-bottom:1px solid var(--line); background:var(--err-bg); }
+  #errors[hidden] { display:none; }
+  #errors button { display:block; width:100%; text-align:left; background:transparent; border:0; border-radius:8px; padding:6px 8px; font-size:.84rem; line-height:1.35; cursor:pointer; min-height:36px; }
+  #errors button:hover { background:var(--err-bg); }
+  #errors b { color:var(--err); font-weight:600; }
+  #errors code { display:block; font-family:var(--mono); font-size:.78rem; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  @media (pointer:coarse) { #errors button { min-height:42px; } }
 
-        h1 {
-            color: #333;
-        }
+  #output { flex:1; min-height:0; overflow:auto; padding:14px 20px 28px; font-family:"Times New Roman",Times,"Noto Serif",serif; font-size:1.12rem; line-height:1.55; overflow-wrap:break-word; }
+  #output p { margin:0 0 .75em; white-space:pre-wrap; }
+  #output .display { margin:.9em 0; overflow-x:auto; overflow-y:hidden; padding:.15em 0; }
+  #output .display mjx-container { margin:0 !important; min-width:max-content; }
+  #output .empty { color:var(--muted); font-family:var(--sans); font-size:.92rem; }
+  .pending { font-family:var(--mono); font-size:.86em; color:var(--muted); }
+  .merr { font-family:var(--mono); font-size:.84em; color:var(--err); background:var(--err-bg); border-radius:5px; padding:1px 4px; white-space:pre-wrap; }
+  .display .merr { display:block; padding:7px 10px; }
+  .display .merr small { display:block; font-family:var(--sans); font-size:.86em; font-weight:600; margin-bottom:3px; }
 
-        #pdfButton {
-            margin-top: 20px;
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
+  #note { position:fixed; z-index:5; left:50%; transform:translateX(-50%); bottom:calc(env(safe-area-inset-bottom,0px) + 22px); display:flex; align-items:center; flex-wrap:wrap; justify-content:center; gap:6px 10px; padding:7px 13px; border-radius:18px; font-size:.86rem; width:max-content; max-width:calc(100vw - 24px); line-height:1.35; }
+  #note[hidden] { display:none; }
+  #note input { background:transparent; border:1px solid var(--line); border-radius:8px; padding:4px 8px; font-size:.8rem; width:min(320px,calc(100vw - 60px)); font-family:var(--mono); }
 
-        #pdfButton:hover {
-            background-color: #0056b3;
-        }
-    </style>
+  @media (max-width:760px) {
+    html,body { height:auto; overflow:auto; overflow-x:hidden; }
+    #app { height:auto; min-height:100dvh; }
+    h1 { font-size:1rem; }
+    #actions { margin-left:0; width:100%; }
+    #actions .btn { flex:1 1 0; padding-left:6px; padding-right:6px; min-width:0; }
+    #actions .primary { flex:1.5 1 0; }
+    #panes { display:flex; flex-direction:column; flex:none; }
+    #editorPane { height:46dvh; min-height:300px; flex:none; }
+    #previewPane { flex:none; min-height:280px; }
+    #output { overflow:auto hidden; overflow-wrap:anywhere; padding:12px 14px 24px; }
+    #errors { max-height:none; }
+  }
+  @media (prefers-reduced-motion:reduce) { * { scroll-behavior:auto !important; transition:none !important; } }
+
+  @media print {
+    @page { size:A4; margin:22mm; }
+    :root { --ink:#000; --bg:#fff; }
+    html,body { height:auto; overflow:visible; background:#fff; color:#000; }
+    #top,#editorPane,#previewPane > .head,#errors,#note { display:none !important; }
+    #app { display:block; height:auto; padding:0; }
+    #panes { display:block; }
+    .pane { border:0; border-radius:0; overflow:visible; background:none; backdrop-filter:none; -webkit-backdrop-filter:none; }
+    #output { overflow:visible; padding:0; font-size:11.5pt; color:#000; }
+    #output .display { overflow:visible; break-inside:avoid; }
+    #output p { orphans:2; widows:2; }
+    .merr { color:#b3261e; background:none; }
+    #output svg path[data-c] { stroke:none; } /* a zero-width stroke prints as a hairline and fattens the glyphs */
+  }
+</style>
 </head>
 <body>
-
-    <div class="container">
-        <h1>LaTeX Editor</h1>
-        <p>Type LaTeX below to see your equation rendered:</p>
-
-        <!-- Textarea for input -->
-        <textarea id="latexInput" placeholder="Type LaTeX code here...">
-Let \( f(x) \) be a continuous function on \( [a, b] \), and let \( g(x) \) be a differentiable function on \( [a, b] \). Consider the following series:
-
-\[
-S = \sum_{n=1}^{\infty} \frac{(-1)^n}{n^2}
-\]
-
-and the integral
-
-\[
-I = \int_a^b f(x) g'(x) \, dx.
-\]
-
-Then we have the following identity:
-
-\[
-I = \sum_{n=1}^{\infty} \left( \int_a^b f(x) g_n(x) \, dx \right)
-\]
-where \( g_n(x) = \frac{(-1)^n}{n^2} g(x) \).
-
-\[{PROOF}\]
-We begin by considering the definition of the series:
-
-\[
-S = \sum_{n=1}^{\infty} \frac{(-1)^n}{n^2}.
-\]
-
-This is a convergent series, and we aim to evaluate the corresponding integral. First, observe that \( g_n(x) \) can be written as:
-
-\[
-g_n(x) = \frac{(-1)^n}{n^2} g(x),
-\]
-so the sum can be rewritten as:
-
-\[
-I = \int_a^b f(x) g'(x) \, dx = \sum_{n=1}^{\infty} \int_a^b f(x) g_n(x) \, dx.
-\]
-
-Now, using the fact that the sum and integral can be interchanged for a convergent series:
-
-\[
-\sum_{n=1}^{\infty} \int_a^b f(x) g_n(x) \, dx = \sum_{n=1}^{\infty} \int_a^b f(x) \frac{(-1)^n}{n^2} g(x) \, dx.
-\]
-
-Next, we consider the matrix representation of the series. For each \( n \), define a matrix \( A_n \) whose entries are given by:
-
-\[
-A_n = \left[ \begin{array}{cc} 
-\frac{(-1)^n}{n^2} & 0 \\ 
-0 & \frac{(-1)^n}{n^2} 
-\end{array} \right].
-\]
-
-Thus, the integral becomes:
-
-\[
-I = \int_a^b f(x) g'(x) \, dx = \sum_{n=1}^{\infty} \text{Tr}(A_n \cdot B),
-\]
-where \( B \) is a matrix representing the function \( f(x) \).
-
-Finally, we conclude the proof by noting that the matrix sum converges and that the integral expression \( I \) is equivalent to the series:
-
-\[
-I = \sum_{n=1}^{\infty} \left( \int_a^b f(x) g_n(x) \, dx \right),
-\]
-as required.
-
-        </textarea>
-
-        <!-- Output container for rendered LaTeX -->
-        <div id="output"></div>
-
-        <!-- Button to save as PDF -->
-        <button id="pdfButton">Save as PDF</button>
+<div id="app">
+  <header id="top">
+    <a id="home" class="glass" href="./">← Home</a>
+    <h1>LaTeX editor</h1>
+    <div id="actions">
+      <button class="btn" id="clearBtn" type="button">Clear</button>
+      <button class="btn" id="sampleBtn" type="button">Sample</button>
+      <button class="btn" id="shareBtn" type="button">Copy link</button>
+      <button class="btn primary" id="pdfButton" type="button">Download PDF</button>
     </div>
-    <script>
-        // Check if MathJax is fully loaded before proceeding
-        window.onload = function() {
-            if (typeof MathJax !== "undefined") {
-                // MathJax is loaded and ready
-                console.log("MathJax loaded successfully");
+  </header>
 
-                // Function to update the output
-                function updateOutput() {
-                    const latexInput = document.getElementById('latexInput').value;
+  <main id="panes">
+    <section id="editorPane" class="pane glass" aria-label="Source">
+      <div class="head"><label for="latexInput">Source</label><span id="saved" class="state"></span></div>
+      <div id="bar" role="toolbar" aria-label="Insert math"></div>
+      <textarea id="latexInput" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" placeholder="Type text and math here, for example: The area is \( \pi r^2 \)."></textarea>
+      <p id="help">Math goes in <code>\( \)</code>, <code>\[ \]</code>, <code>$ $</code>, <code>$$ $$</code> or environments such as <code>align</code>. Write <code>\$</code> for a dollar sign. Everything else stays plain text.</p>
+    </section>
+    <section id="previewPane" class="pane glass" aria-label="Preview">
+      <div class="head"><h2>Preview</h2><span id="state" class="state" role="status">Loading math…</span></div>
+      <ul id="errors" hidden aria-label="Math errors"></ul>
+      <div id="output" tabindex="0" aria-label="Rendered document"></div>
+    </section>
+  </main>
+</div>
+<div id="note" class="glass" role="status" hidden></div>
 
-                    // Clear previous content to avoid duplicate rendering
-                    const output = document.getElementById('output');
-                    output.innerHTML = ''; // Clear the content
+<script>
+'use strict';
+const SAMPLE = String.raw`Let \( f \) and \( g \) be continuously differentiable on \( [a, b] \). Integration by parts says
 
-                    // Set the LaTeX code into the output container
-                    output.innerHTML = `${latexInput}`;
+\[
+\int_a^b f(x)\, g'(x) \, dx = f(b)g(b) - f(a)g(a) - \int_a^b f'(x)\, g(x) \, dx.
+\]
 
-                    // Ensure that MathJax renders the LaTeX
-                    MathJax.Hub.Queue(["Typeset", MathJax.Hub, "output"]);
-                }
+Now consider the alternating series
 
-                // Event listener for textarea input
-                document.getElementById('latexInput').addEventListener('input', updateOutput);
+\[
+S = \sum_{n=1}^{\infty} \frac{(-1)^n}{n^2} = -\frac{\pi^2}{12},
+\]
 
-                // Initial call to render default content (if any)
-                updateOutput();
+and for each \( n \) define the matrix
 
-                // Event listener for the "Save as PDF" button
-                document.getElementById('pdfButton').addEventListener('click', function() {
-                    const element = document.getElementById('output');
+\[
+A_n = \left[ \begin{array}{cc}
+\frac{(-1)^n}{n^2} & 0 \\
+0 & \frac{(-1)^n}{n^2}
+\end{array} \right],
+\qquad \text{so that} \qquad
+\sum_{n=1}^{\infty} \text{Tr}(A_n) = 2S = -\frac{\pi^2}{6}.
+\]
 
-                    // Ensure MathJax finishes rendering before capturing the element for PDF export
-                    MathJax.Hub.Queue(function() {
-                        setTimeout(function() {
-                            // Temporarily remove the aria-hidden attribute to allow for PDF capture
-                            element.removeAttribute('aria-hidden');
+Aligned steps use the align environment:
 
-                            // Generate PDF
-                            html2pdf()
-                                .from(element)         // Specify the HTML element to convert
-                                .toPdf()
-                                .get('pdf')            // Get the PDF object
-                                .then(function (pdf) {
-                                    // Optional: Customize the PDF metadata here if needed
-                                    pdf.setProperties({
-                                        title: 'LaTeX Equation',
-                                        subject: 'Exported LaTeX Equation as PDF'
-                                    });
-                                    // Save the PDF file
-                                    pdf.save('latex_equation.pdf');
-                                });
+\begin{align}
+(a + b)^2 &= (a + b)(a + b) \\
+          &= a^2 + 2ab + b^2.
+\end{align}
 
-                            // Add the aria-hidden attribute back after PDF export
-                            //element.setAttribute('aria-hidden', 'true');
-                        }, 500);  // Delay to ensure MathJax rendering is complete
-                    });
-                });
-            } else {
-                console.log("MathJax failed to load.");
-            }
-        };
-    </script>
+Piecewise definitions use cases:
 
+\[
+|x| = \begin{cases}
+  x  & \text{if } x \ge 0, \\
+  -x & \text{if } x < 0.
+\end{cases}
+\]
+
+Single dollar signs work inline too: the roots of $ax^2 + bx + c = 0$ are $x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$. Double dollar signs give a display:
+
+$$
+\det \begin{pmatrix} a & b \\ c & d \end{pmatrix} = ad - bc,
+\qquad
+\int_{-\infty}^{\infty} e^{-x^2} \, dx = \sqrt{\pi}.
+$$
+
+Ordinary prices stay as text: a coffee costs $5 and a sandwich costs $10.
+`;
+
+const STORE_KEY = 'latex-draft';
+const CDN = 'https://cdn.jsdelivr.net/npm/';
+const MATHJAX_URL = CDN + 'mathjax@3.2.2/es5/tex-svg-full.js';
+const PDF_LIBS = [CDN + 'jspdf@4.2.1/dist/jspdf.umd.min.js', CDN + 'svg2pdf.js@2.8.1/dist/svg2pdf.umd.min.js'];
+const UNICODE_FONT = CDN + 'dejavu-fonts-ttf@2.37.3/ttf/DejaVuSerif.ttf';
+const MAX_LINK_CHARS = 20000;
+
+const $ = id => document.getElementById(id);
+const ta = $('latexInput'), output = $('output'), stateEl = $('state'), errorsEl = $('errors'), savedEl = $('saved'), noteEl = $('note'), pdfBtn = $('pdfButton');
+const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+
+/* ---------- Messages ---------- */
+let noteTimer = 0;
+function showNote(text, opts = {}) {
+  clearTimeout(noteTimer);
+  noteEl.replaceChildren(el('span', '', text));
+  if (opts.field) {
+    const f = el('input'); f.readOnly = true; f.value = opts.field; f.setAttribute('aria-label', 'Share link');
+    noteEl.append(f); setTimeout(() => { f.focus(); f.select(); });
+  }
+  if (opts.action) {
+    const b = el('button', 'btn small', opts.action.label); b.type = 'button';
+    b.onclick = () => { hideNote(); opts.action.run(); };
+    noteEl.append(b);
+  }
+  if (opts.sticky) {
+    const x = el('button', 'btn small', 'Dismiss'); x.type = 'button'; x.onclick = hideNote;
+    noteEl.append(x);
+  } else {
+    noteTimer = setTimeout(hideNote, opts.action ? 12000 : 6000);
+  }
+  noteEl.hidden = false;
+}
+function hideNote() { clearTimeout(noteTimer); noteEl.hidden = true; noteEl.replaceChildren(); }
+
+/* ---------- Reading the source: text and math, never HTML ---------- */
+function closeOfEscaped(s, from, closer) {
+  const opener = closer === ')' ? '(' : '[';
+  for (let j = from; j < s.length - 1; j++) {
+    if (s[j] === '\\') {
+      if (s[j + 1] === closer) return j;
+      if (s[j + 1] === opener) return -1; /* the first one was never closed */
+      j++;
+    }
+  }
+  return -1;
+}
+function closeOfDoubleDollar(s, from) {
+  for (let j = from; j < s.length - 1; j++) {
+    if (s[j] === '\\') j++;
+    else if (s[j] === '$' && s[j + 1] === '$') return j;
+  }
+  return -1;
+}
+/* A single $ opens math only when it looks like math, so that "$5 and $10" stays text. */
+function closeOfDollar(s, from) {
+  const c0 = s[from];
+  if (c0 === undefined || /\s/.test(c0)) return -1;
+  for (let j = from; j < s.length; j++) {
+    if (s[j] === '\\') { j++; continue; }
+    if (s[j] === '\n' && /^\n[ \t]*\n/.test(s.slice(j, j + 40))) return -1;
+    if (s[j] === '$') {
+      if (/\s/.test(s[j - 1]) || /\d/.test(s[j + 1] || '')) return -1;
+      const inner = s.slice(from, j);
+      if (/^\d[\d.,]*\s/.test(inner) && /(^|[\s(])[a-z]{2,}([\s.,;:)]|$)/i.test(inner)) return -1;
+      return j;
+    }
+  }
+  return -1;
+}
+function closeOfBacktick(s, from) {
+  for (let j = from; j < s.length; j++) {
+    if (s[j] === '\n' && /^\n[ \t]*\n/.test(s.slice(j, j + 40))) return -1;
+    if (s[j] === '`') return j;
+  }
+  return -1;
+}
+function endOfEnv(s, name, from) {
+  const safe = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp('\\\\(begin|end)\\{' + safe + '\\}', 'g');
+  re.lastIndex = from;
+  let depth = 1, m;
+  while ((m = re.exec(s))) {
+    depth += m[1] === 'begin' ? 1 : -1;
+    if (!depth) return re.lastIndex;
+  }
+  return -1;
+}
+function tokenize(s) {
+  const out = []; let buf = '', bufStart = 0, i = 0;
+  const flush = () => { if (buf) out.push({ k: 'text', text: buf, start: bufStart, end: i }); buf = ''; };
+  const add = (str, len) => { if (!buf) bufStart = i; buf += str; i += len; };
+  const math = (tex, display, lang, end) => { flush(); out.push({ k: 'math', tex, display, lang, src: s.slice(i, end), start: i, end }); i = end; };
+  const bad = (len, msg) => { flush(); out.push({ k: 'bad', src: s.slice(i, i + len), error: msg, start: i, end: i + len }); i += len; };
+  const beginRe = /\\begin\{([^{}\s]+)\}/y, strayEndRe = /\\end\{([^{}\s]+)\}/y;
+  while (i < s.length) {
+    const c = s[i], d = s[i + 1];
+    if (c === '\\') {
+      if (d === '(' || d === '[') {
+        const closer = d === '(' ? ')' : ']', j = closeOfEscaped(s, i + 2, closer);
+        if (j < 0) bad(2, `Missing \\${closer} to close this \\${d}`);
+        else math(s.slice(i + 2, j), d === '[', 'tex', j + 2);
+        continue;
+      }
+      if (d === ')' || d === ']') { bad(2, `This \\${d} has no opening \\${d === ')' ? '(' : '['}`); continue; }
+      if (d === '$') { add('$', 2); continue; }
+      beginRe.lastIndex = i;
+      const m = beginRe.exec(s);
+      if (m) {
+        const end = endOfEnv(s, m[1], i + m[0].length);
+        if (end < 0) bad(m[0].length, `Missing \\end{${m[1]}}`);
+        else math(s.slice(i, end), true, 'tex', end);
+        continue;
+      }
+      strayEndRe.lastIndex = i;
+      const e = strayEndRe.exec(s);
+      if (e) { bad(e[0].length, `This \\end{${e[1]}} has no \\begin`); continue; }
+      add(c + (d || ''), d ? 2 : 1); /* keeps \\[ from reading as a delimiter */
+      continue;
+    }
+    if (c === '$' && d === '$') {
+      const j = closeOfDoubleDollar(s, i + 2);
+      if (j < 0) bad(2, 'Missing $$ to close this $$');
+      else math(s.slice(i + 2, j), true, 'tex', j + 2);
+      continue;
+    }
+    if (c === '$') {
+      const j = closeOfDollar(s, i + 1);
+      if (j < 0) add('$', 1);
+      else math(s.slice(i + 1, j), false, 'tex', j + 1);
+      continue;
+    }
+    if (c === '`') {
+      const j = closeOfBacktick(s, i + 1);
+      if (j < 0) add('`', 1);
+      else math(s.slice(i + 1, j), false, 'am', j + 1);
+      continue;
+    }
+    add(c, 1);
+  }
+  flush();
+  return out;
+}
+function toBlocks(tokens) {
+  const blocks = []; let para = null;
+  const close = () => {
+    if (!para) return;
+    const items = para.items, first = items[0], last = items[items.length - 1];
+    if (first && first.k === 'text') first.text = first.text.replace(/^\s+/, '');
+    if (last && last.k === 'text') last.text = last.text.replace(/\s+$/, '');
+    para.items = items.filter(t => t.k !== 'text' || t.text);
+    if (para.items.length) blocks.push(para);
+    para = null;
+  };
+  const open = at => { if (!para) para = { k: 'para', items: [], start: at, end: at }; return para; };
+  for (const t of tokens) {
+    if (t.k === 'math' && t.display) { close(); blocks.push({ k: 'display', math: t, start: t.start, end: t.end }); continue; }
+    if (t.k !== 'text') { const p = open(t.start); p.items.push(t); p.end = t.end; continue; }
+    const re = /\n[ \t]*\n\s*/g; let last = 0, m;
+    const push = (text, at, end) => { if (text) { const p = open(at); p.items.push({ k: 'text', text }); p.end = end; } };
+    while ((m = re.exec(t.text))) {
+      push(t.text.slice(last, m.index), t.start + last, t.start + m.index);
+      close(); last = re.lastIndex;
+    }
+    push(t.text.slice(last), t.start + last, t.end);
+  }
+  close();
+  return blocks;
+}
+
+/* ---------- MathJax ---------- */
+let mathReady = false, mathFailed = false;
+const DEFINES = /\\(?:newcommand|renewcommand|providecommand|def|let|DeclareMathOperator|newenvironment|renewenvironment)(?![a-zA-Z])/;
+let cache = new Map();
+
+/* Packages that make links, inject classes or styles, or fetch code (html, action, bbox, require, autoload, unicode) stay off. */
+window.MathJax = {
+  /* AsciiMath is an optional extra download. If it fails, TeX still starts and backtick math reports an error. */
+  loader: { load: ['input/asciimath'], failed() { startMath(); } },
+  startup: { typeset: false, ready() { startMath(); } },
+  tex: { packages: ['base', 'ams', 'amscd', 'newcommand', 'mathtools', 'boldsymbol', 'braket', 'cancel', 'cases', 'centernot', 'color', 'colortbl', 'empheq', 'enclose', 'extpfeil', 'gensymb', 'mhchem', 'textcomp', 'upgreek', 'verb'] },
+  svg: { fontCache: 'none' },
+  options: { enableMenu: false }
+};
+function startMath() {
+  try {
+    MathJax.startup.defaultReady();
+    MathJax.startup.promise.then(() => {
+      document.head.append(MathJax.svgStylesheet());
+      mathReady = true;
+      renderNow();
+    }).catch(mathLoadFailed);
+  } catch (e) { mathLoadFailed(); }
+}
+function mathLoadFailed() {
+  mathFailed = true;
+  renderNow();
+}
+function resetDefinitions() {
+  try {
+    MathJax.texReset();
+    const handlers = MathJax.startup.input[0].parseOptions.handlers;
+    for (const name of ['new-Delimiter', 'new-Command', 'new-Environment']) {
+      const map = handlers.retrieve(name);
+      if (map && map.map) map.map.clear();
+    }
+  } catch (e) { /* older definitions stay until reload */ }
+}
+/* Base TeX still lets \mmlToken and \color set attributes, so everything active is removed from the output.
+   Shared links render on open, so nothing here may be able to load a resource from another server. */
+const PAINT_ATTR = new Set(['fill', 'stroke', 'color', 'mathcolor', 'mathbackground', 'background', 'stop-color']);
+const PLAIN_COLOR = /^(?:currentcolor|none|transparent|[a-z]+|#[0-9a-f]{3,8}|rgba?\([\d.,\s%]+\))$/i;
+const LOADS_SOMETHING = /url|image-set|image\(|@import|expression|\\/i;
+function scrub(node) {
+  for (const n of node.querySelectorAll('*')) {
+    for (const { name, value } of [...n.attributes]) {
+      const low = name.toLowerCase();
+      const drop = low === 'href' || low.endsWith(':href') || low === 'src' || low === 'id' || low.startsWith('on') ||
+        (low === 'class' && !value.split(/\s+/).every(c => c.startsWith('mjx-'))) ||
+        (PAINT_ATTR.has(low) && !PLAIN_COLOR.test(value.trim())) ||
+        (low !== 'd' && low !== 'transform' && LOADS_SOMETHING.test(value)) ||
+        (low === 'style' && value.includes('('));
+      if (drop) n.removeAttribute(name);
+    }
+  }
+  return node;
+}
+function convert(t) {
+  try {
+    const node = t.lang === 'am'
+      ? MathJax.asciimath2svg(t.tex, { display: false })
+      : MathJax.tex2svg(t.tex, { display: t.display });
+    const flagged = node.querySelector('[data-mjx-error]') || node.querySelector('[data-mml-node="merror"]');
+    if (flagged) return { error: flagged.getAttribute('data-mjx-error') || flagged.getAttribute('title') || 'This math could not be read' };
+    return { node: scrub(node) };
+  } catch (e) {
+    return { error: t.lang === 'am' && !MathJax.asciimath2svg ? 'AsciiMath could not be loaded' : String((e && e.message) || e) };
+  }
+}
+
+/* ---------- Rendering the preview ---------- */
+let current = { blocks: [], errors: [], formulas: 0 };
+const lineOf = (s, at) => { let n = 1; for (let i = 0; i < at && i < s.length; i++) if (s[i] === '\n') n++; return n; };
+
+function buildMath(t, used, defs) {
+  if (!mathReady) return;
+  const defining = t.lang === 'tex' && DEFINES.test(t.tex);
+  const key = defs.text + '\0' + t.lang + (t.display ? 'D' : 'I') + t.tex;
+  let result = !defining && cache.get(key);
+  if (!result) result = convert(t);
+  if (defining) defs.text += t.tex + '\0';
+  used.set(key, result);
+  t.node = result.node || null;
+  t.error = result.error || null;
+}
+function mathDom(t) {
+  if (t.error) {
+    const box = el('span', 'merr');
+    box.title = t.error;
+    if (t.display) box.append(el('small', '', t.error));
+    box.append(t.src);
+    return box;
+  }
+  if (t.node) {
+    const c = t.node.cloneNode(true);
+    const svg = c.querySelector('svg');
+    if (!c.querySelector('mjx-assistive-mml') && svg) { svg.setAttribute('role', 'img'); svg.setAttribute('aria-label', t.tex); }
+    return c;
+  }
+  return el('span', 'pending', t.src);
+}
+function render() {
+  const text = ta.value;
+  const t0 = performance.now();
+  const blocks = toBlocks(tokenize(text));
+  const used = new Map(), defs = { text: '' }, errors = [], frag = document.createDocumentFragment();
+  let formulas = 0;
+  if (mathReady) resetDefinitions();
+  const noteError = t => errors.push({ start: t.start, end: t.end, line: lineOf(text, t.start), message: t.error, src: t.src });
+  for (const b of blocks) {
+    let node;
+    if (b.k === 'display') {
+      buildMath(b.math, used, defs);
+      formulas++;
+      if (b.math.error) noteError(b.math);
+      node = el('div', 'display');
+      node.append(mathDom(b.math));
+    } else {
+      node = el('p');
+      for (const it of b.items) {
+        if (it.k === 'text') node.append(it.text);
+        else if (it.k === 'bad') { noteError(it); node.append(mathDom(it)); }
+        else {
+          buildMath(it, used, defs);
+          formulas++;
+          if (it.error) noteError(it);
+          node.append(mathDom(it));
+        }
+      }
+    }
+    node.dataset.start = b.start; node.dataset.end = b.end;
+    frag.append(node);
+  }
+  if (!blocks.length) frag.append(el('p', 'empty', 'Your rendered document will appear here.'));
+  const scroll = output.scrollTop;
+  output.replaceChildren(frag);
+  output.scrollTop = scroll;
+  /* a formula wider than the pane scrolls by itself, so keyboard users must be able to reach it */
+  for (const d of output.querySelectorAll('.display')) if (d.scrollWidth > d.clientWidth) d.tabIndex = 0;
+  cache = used;
+  current = { blocks, errors, formulas };
+  showState(errors, formulas);
+  showErrors(errors);
+  return performance.now() - t0;
+}
+function showState(errors, formulas) {
+  stateEl.classList.toggle('bad', errors.length > 0 || mathFailed);
+  if (mathFailed) stateEl.textContent = 'Math engine failed to load. Check your connection and reload.';
+  else if (!mathReady) stateEl.textContent = 'Loading math…';
+  else if (errors.length) stateEl.textContent = errors.length === 1 ? '1 math error' : errors.length + ' math errors';
+  else stateEl.textContent = formulas === 1 ? '1 formula, no errors' : formulas + ' formulas, no errors';
+}
+function showErrors(errors) {
+  errorsEl.hidden = !errors.length;
+  const items = errors.slice(0, 50).map(e => {
+    const li = el('li'), b = el('button');
+    b.type = 'button';
+    b.append(el('b', '', 'Line ' + e.line + ': '), e.message, el('code', '', e.src.replace(/\s+/g, ' ').trim()));
+    b.title = 'Go to this line in the source';
+    b.onclick = () => selectSource(e.start, e.end);
+    li.append(b);
+    return li;
+  });
+  errorsEl.replaceChildren(...items);
+}
+function selectSource(start, end) {
+  ta.focus();
+  ta.setSelectionRange(start, end);
+  const cs = getComputedStyle(ta), mirror = el('div');
+  mirror.style.cssText = `position:absolute;visibility:hidden;white-space:pre-wrap;overflow-wrap:break-word;top:0;left:0;width:${ta.clientWidth}px;font:${cs.font};line-height:${cs.lineHeight};padding:${cs.padding};letter-spacing:${cs.letterSpacing};tab-size:${cs.tabSize}`;
+  mirror.textContent = ta.value.slice(0, start);
+  document.body.append(mirror);
+  const y = mirror.scrollHeight;
+  mirror.remove();
+  ta.scrollTop = Math.max(0, y - ta.clientHeight / 2);
+  const box = ta.getBoundingClientRect();
+  if (box.top < 0 || box.bottom > innerHeight) ta.scrollIntoView({ block: 'center' });
+}
+function followCaret() {
+  if (output.scrollHeight <= output.clientHeight || getComputedStyle(output).overflowY === 'hidden') return;
+  const at = ta.selectionStart;
+  const nodes = output.children;
+  for (let i = 0; i < nodes.length; i++) {
+    const n = nodes[i];
+    if (at <= +n.dataset.end || i === nodes.length - 1) {
+      const top = n.offsetTop - output.offsetTop, bottom = top + n.offsetHeight;
+      if (top < output.scrollTop) output.scrollTop = top - 12;
+      else if (bottom > output.scrollTop + output.clientHeight) output.scrollTop = bottom - output.clientHeight + 12;
+      return;
+    }
+  }
+}
+
+/* Debounced, and slower only when a document is slow to render. */
+let renderTimer = 0, renderCost = 0;
+function renderNow() { clearTimeout(renderTimer); renderTimer = 0; renderCost = render(); }
+function scheduleRender() {
+  clearTimeout(renderTimer);
+  renderTimer = setTimeout(() => { renderNow(); followCaret(); }, Math.min(800, Math.max(140, renderCost * 2)));
+}
+
+/* ---------- Draft ---------- */
+let storageOk = true, saveTimer = 0, holdingShared = false;
+function readDraft() { try { return localStorage.getItem(STORE_KEY); } catch (e) { storageOk = false; return null; } }
+function saveDraft() {
+  clearTimeout(saveTimer); saveTimer = 0;
+  if (holdingShared) return;
+  try { localStorage.setItem(STORE_KEY, ta.value); savedEl.textContent = 'Draft saved in this browser'; }
+  catch (e) { storageOk = false; savedEl.textContent = 'Draft cannot be saved here'; }
+}
+function scheduleSave() { clearTimeout(saveTimer); savedEl.textContent = ''; saveTimer = setTimeout(saveDraft, 400); }
+function setDoc(value) { ta.value = value; ta.scrollTop = 0; output.scrollTop = 0; renderNow(); saveDraft(); }
+function replaceWithUndo(value, message) {
+  const before = ta.value;
+  releaseShared();
+  setDoc(value);
+  showNote(message, { action: { label: 'Undo', run: () => { setDoc(before); ta.focus(); } } });
+}
+function releaseShared() {
+  if (!holdingShared) return;
+  holdingShared = false;
+  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { location.hash = ''; }
+}
+ta.addEventListener('input', () => { releaseShared(); scheduleRender(); scheduleSave(); });
+addEventListener('pagehide', () => { if (saveTimer) saveDraft(); });
+$('clearBtn').onclick = () => { replaceWithUndo('', 'Cleared.'); ta.focus(); };
+$('sampleBtn').onclick = () => replaceWithUndo(SAMPLE, 'Sample loaded.');
+
+/* ---------- Share links: the document lives in the #fragment and is never sent to a server ---------- */
+function encodeDoc(s) {
+  let bin = '';
+  for (const b of new TextEncoder().encode(s)) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function decodeDoc(s) {
+  const bin = atob(s.replace(/-/g, '+').replace(/_/g, '/'));
+  return new TextDecoder('utf-8', { fatal: true }).decode(Uint8Array.from(bin, c => c.charCodeAt(0)));
+}
+function openFromHash() {
+  const m = /^#doc=(.*)$/.exec(location.hash);
+  if (!m) return false;
+  let shared;
+  try { shared = decodeDoc(m[1]); }
+  catch (e) { showNote('This share link is damaged, so your draft was left as it was.'); return false; }
+  const mine = readDraft();
+  holdingShared = true;
+  ta.value = shared;
+  ta.scrollTop = 0;
+  if (mine && mine !== shared) {
+    showNote('Opened from a shared link. Your draft is kept until you edit this.', { sticky: true, action: { label: 'Back to my draft', run: () => { releaseShared(); setDoc(mine); } } });
+  } else {
+    showNote('Opened from a shared link.');
+  }
+  return true;
+}
+addEventListener('hashchange', () => { if (openFromHash()) renderNow(); });
+$('shareBtn').onclick = async () => {
+  if (!ta.value.trim()) { showNote('There is nothing to share yet.'); return; }
+  if (ta.value.length > MAX_LINK_CHARS) { showNote('This document is too long for a link. Download the PDF instead.'); return; }
+  const url = location.href.split('#')[0] + '#doc=' + encodeDoc(ta.value);
+  try { await navigator.clipboard.writeText(url); showNote('Link copied. The whole document is inside it.'); }
+  catch (e) { showNote('Copy this link:', { field: url, sticky: true }); }
+};
+
+/* ---------- Toolbar ---------- */
+/* § marks where the selection or the caret goes. */
+const SNIPPETS = [
+  { label: '\\( \\)', title: 'Inline math', raw: '\\(§\\)' },
+  { label: '\\[ \\]', title: 'Display math', raw: '\\[\n§\n\\]' },
+  { label: 'a/b', title: 'Fraction', tex: '\\frac{§}{}' },
+  { label: '√', title: 'Square root', tex: '\\sqrt{§}' },
+  { label: '∑', title: 'Sum', tex: '\\sum_{i=1}^{n} §' },
+  { label: '∫', title: 'Integral', tex: '\\int_{a}^{b} § \\, dx' },
+  { label: 'matrix', title: 'Matrix', env: '\\begin{pmatrix}\n§ & \\\\\n & \n\\end{pmatrix}' },
+  { label: 'cases', title: 'Cases', env: '\\begin{cases}\n§ & \\text{if } \\\\\n & \\text{otherwise}\n\\end{cases}' },
+  { label: 'align', title: 'Aligned equations', env: '\\begin{align}\n§ &= \\\\\n &= \n\\end{align}', within: '\\begin{aligned}\n§ &= \\\\\n &= \n\\end{aligned}' }
+];
+function caretInMath(at) {
+  return tokenize(ta.value).some(t => t.k === 'math' && at > t.start && at < t.end);
+}
+function insertSnippet(sn) {
+  const start = ta.selectionStart, end = ta.selectionEnd, picked = ta.value.slice(start, end), inside = caretInMath(start);
+  let tpl;
+  if (sn.raw) tpl = sn.raw;
+  else if (sn.env) tpl = inside ? (sn.within || sn.env) : sn.env;
+  else tpl = inside ? sn.tex : '\\(' + sn.tex + '\\)';
+  const cut = tpl.indexOf('§'), before = tpl.slice(0, cut), after = tpl.slice(cut + 1), text = before + picked + after;
+  ta.focus();
+  ta.setSelectionRange(start, end);
+  let done = false;
+  try { done = document.execCommand('insertText', false, text); } catch (e) { /* use the fallback */ }
+  if (!done) ta.setRangeText(text, start, end, 'end');
+  const caret = start + before.length + picked.length;
+  ta.setSelectionRange(caret, caret);
+  if (!done) { releaseShared(); scheduleRender(); scheduleSave(); }
+}
+for (const sn of SNIPPETS) {
+  const b = el('button', 'btn', sn.label);
+  b.type = 'button'; b.title = sn.title; b.setAttribute('aria-label', 'Insert ' + sn.title.toLowerCase());
+  b.onclick = () => insertSnippet(sn);
+  $('bar').append(b);
+}
+
+/* ---------- PDF: real text and vector math, laid out and paginated here ---------- */
+const PDF = { size: 11.5, leading: 16, margin: 64, paraGap: 7, displayGap: 10, errSize: 9.5, ink: '#000000', err: '#b3261e', scale: 4 };
+const WIN_ANSI = /^[\x20-\x7e\xa0-\xff\u2013\u2014\u2018\u2019\u201c\u201d\u2026\u20ac\u2022]*$/;
+const loadScript = url => new Promise((ok, fail) => { const s = document.createElement('script'); s.src = url; s.onload = ok; s.onerror = () => fail(new Error('Could not load ' + url)); document.head.append(s); });
+let libsLoaded = null, fontData = null;
+function loadPdfLibs() {
+  if (!libsLoaded) libsLoaded = PDF_LIBS.reduce((p, url) => p.then(() => loadScript(url)), Promise.resolve()).catch(e => { libsLoaded = null; throw e; });
+  return libsLoaded;
+}
+async function loadUnicodeFont() {
+  if (fontData) return fontData;
+  const res = await fetch(UNICODE_FONT);
+  if (!res.ok) throw new Error('font ' + res.status);
+  let bin = '';
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  for (let i = 0; i < bytes.length; i += 32768) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 32768));
+  return (fontData = btoa(bin));
+}
+const textOfBlocks = blocks => blocks.map(b => b.k === 'display' ? (b.math.error ? b.math.src : '') : b.items.map(t => t.k === 'text' ? t.text : (t.error ? t.src : '')).join(' ')).join(' ');
+
+/* Characters no embedded font can show are drawn as small sharp images, so nothing is lost. */
+function bitmapWord(doc, text, family, size, color) {
+  const px = size * PDF.scale;
+  const c = document.createElement('canvas'), g = c.getContext('2d');
+  const font = `${px}px ${family}`;
+  g.font = font;
+  const w = Math.max(1, Math.ceil(g.measureText(text).width));
+  c.width = w; c.height = Math.ceil(px * 1.5);
+  g.font = font; g.fillStyle = color; g.textBaseline = 'alphabetic';
+  g.fillText(text, 0, Math.round(px * 1.1));
+  return {
+    w: w / PDF.scale, asc: size * 1.1, desc: size * 0.4,
+    draw(x, base) { doc.addImage(c.toDataURL('image/png'), 'PNG', x, base - size * 1.1, w / PDF.scale, c.height / PDF.scale); }
+  };
+}
+function wordAtom(doc, text, fonts, style) {
+  const font = style === 'err' ? fonts.err : fonts.body;
+  const size = style === 'err' ? PDF.errSize : PDF.size, color = style === 'err' ? PDF.err : PDF.ink;
+  if (!font.covers(text)) return bitmapWord(doc, text, font.css, size, color);
+  doc.setFont(font.name, 'normal'); doc.setFontSize(size);
+  return {
+    w: doc.getTextWidth(text), asc: size * 0.72, desc: size * 0.22, text,
+    draw(x, base) { doc.setFont(font.name, 'normal'); doc.setFontSize(size); doc.setTextColor(color); doc.text(text, x, base); }
+  };
+}
+function blackClone(svg) {
+  const c = svg.cloneNode(true);
+  c.removeAttribute('style');
+  for (const n of [c, ...c.querySelectorAll('*')]) {
+    if (n.getAttribute('fill') === 'currentColor') n.setAttribute('fill', '#000000');
+    if (n.getAttribute('stroke') === 'currentColor') n.setAttribute('stroke', '#000000');
+  }
+  return c;
+}
+async function drawSvgAsImage(doc, svg, x, y, w, h, boxW = w, boxH = h) {
+  const c = blackClone(svg);
+  c.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  c.setAttribute('width', boxW); c.setAttribute('height', boxH);
+  c.setAttribute('color', '#000000');
+  const img = new Image();
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(c));
+  await img.decode();
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.ceil(w * PDF.scale); canvas.height = Math.ceil(h * PDF.scale);
+  canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+  doc.addImage(canvas.toDataURL('image/png'), 'PNG', x, y, w, h);
+}
+const SHRUNK_BELOW = 0.7;
+let shrunk = 0;
+function taggedAtom(doc, svg, maxW, maxH) {
+  /* \tag output has no viewBox and leans on browser layout, so it is sized in px (MathJax uses 1ex = 8px) and drawn as a sharp image. */
+  const pxPerEm = 8 / 0.442, ptPerPx = PDF.size / pxPerEm;
+  const css = svg.getAttribute('style') || '';
+  const minEx = parseFloat((/min-width:\s*([\d.]+)ex/.exec(css) || [])[1]) || 0;
+  const depthEx = parseFloat((/vertical-align:\s*-?([\d.]+)ex/.exec(css) || [])[1]) || 0;
+  const hPx = parseFloat(svg.getAttribute('height')) * 8;
+  const s = Math.min(1, maxW / (minEx * 8 * ptPerPx), maxH / (hPx * ptPerPx));
+  if (s < SHRUNK_BELOW) shrunk++;
+  const wPx = maxW / (ptPerPx * s), h = hPx * ptPerPx * s, desc = depthEx * 8 * ptPerPx * s;
+  return { w: maxW, asc: h - desc, desc, math: true, draw: (x, base) => drawSvgAsImage(doc, svg, x, base - (h - desc), maxW, h, wPx, hPx) };
+}
+function mathAtom(doc, node, maxW, maxH) {
+  const svg = node.querySelector('svg');
+  if ((svg.getAttribute('width') || '').endsWith('%')) return taggedAtom(doc, svg, maxW, maxH);
+  const [, vy, vw, vh] = svg.getAttribute('viewBox').trim().split(/[\s,]+/).map(Number);
+  const em = PDF.size / 1000;
+  const s = Math.min(1, maxW / (vw * em), maxH / (vh * em));
+  if (s < SHRUNK_BELOW) shrunk++;
+  const w = vw * em * s, h = vh * em * s, asc = -vy * em * s, desc = h - asc;
+  const asImage = !!svg.querySelector('text');
+  return {
+    w, asc, desc, math: true,
+    async draw(x, base) {
+      const y = base - asc;
+      if (asImage) return drawSvgAsImage(doc, svg, x, y, w, h);
+      const host = el('div');
+      host.style.cssText = 'position:absolute;left:-99999px;top:0';
+      const c = blackClone(svg);
+      c.setAttribute('width', w); c.setAttribute('height', h);
+      host.append(c); document.body.append(host);
+      try { await doc.svg(c, { x, y, width: w, height: h }); } finally { host.remove(); }
+    }
+  };
+}
+function splitLongWord(doc, atom, text, fonts, style, W) {
+  if (atom.w <= W || text.length < 2) return [atom];
+  const parts = []; let cur = '';
+  for (const ch of text) {
+    const test = wordAtom(doc, cur + ch, fonts, style);
+    if (test.w > W && cur) { parts.push(wordAtom(doc, cur, fonts, style)); cur = ch; } else cur += ch;
+  }
+  if (cur) parts.push(wordAtom(doc, cur, fonts, style));
+  return parts;
+}
+/* Turns a paragraph into clusters: atoms with no space between them, such as a formula and its comma. */
+function clustersOf(doc, items, fonts, W, H) {
+  const clusters = []; let cur = null, hard = false;
+  const breakHere = () => { cur = null; };
+  const addAtom = a => { if (!cur) { cur = { atoms: [], w: 0, hard }; hard = false; clusters.push(cur); } cur.atoms.push(a); cur.w += a.w; };
+  const addText = (text, style) => {
+    for (const piece of text.normalize('NFC').split(/(\s+)/)) {
+      if (!piece) continue;
+      if (/^\s+$/.test(piece)) { breakHere(); if (piece.includes('\n')) hard = true; continue; }
+      const atom = wordAtom(doc, piece, fonts, style);
+      const parts = splitLongWord(doc, atom, piece, fonts, style, W);
+      parts.forEach((p, i) => { if (i) breakHere(); addAtom(p); });
+    }
+  };
+  for (const it of items) {
+    if (it.k === 'text') addText(it.text, 'body');
+    else if (it.error) addText(it.src, 'err');
+    else if (it.node) addAtom(mathAtom(doc, it.node, W, H));
+    else addText(it.src, 'err');
+  }
+  return clusters;
+}
+function linesOf(clusters, W, space) {
+  const lines = []; let line = null;
+  for (const c of clusters) {
+    if (!line || c.hard || line.w + space + c.w > W) {
+      if (line) line.softEnd = !c.hard;
+      line = { clusters: [], w: 0 };
+      lines.push(line);
+      line.clusters.push(c); line.w = c.w;
+    } else { line.clusters.push(c); line.w += space + c.w; }
+  }
+  return lines;
+}
+function layout(doc, blocks, fonts, W, H) {
+  const boxes = [];
+  doc.setFont(fonts.body.name, 'normal'); doc.setFontSize(PDF.size);
+  const space = doc.getTextWidth(' ') || PDF.size * 0.25;
+  blocks.forEach((b, bi) => {
+    const next = blocks[bi + 1];
+    if (b.k === 'display' && b.math.node) {
+      const a = mathAtom(doc, b.math.node, W, H - PDF.displayGap * 2);
+      boxes.push({ h: a.asc + a.desc + PDF.displayGap * 2, gapBefore: 0, draw: (top) => a.draw(PDF.margin + (W - a.w) / 2, top + PDF.displayGap + a.asc) });
+      return;
+    }
+    const items = b.k === 'display' ? [b.math] : b.items;
+    const lines = linesOf(clustersOf(doc, items, fonts, W, H), W, space);
+    lines.forEach((line, li) => {
+      const atoms = line.clusters.flatMap(c => c.atoms);
+      const asc = Math.max(PDF.size * 0.75, ...atoms.map(a => a.asc)), desc = Math.max(PDF.size * 0.25, ...atoms.map(a => a.desc));
+      const lead = Math.max(2, PDF.leading - asc - desc);
+      const lastOfPara = li === lines.length - 1;
+      const gaps = line.clusters.length - 1;
+      const slack = gaps ? (W - line.w) / gaps : 0;
+      const stretch = line.softEnd && slack <= space * 1.4 ? slack : 0;
+      boxes.push({
+        h: asc + desc + lead + (lastOfPara ? PDF.paraGap : 0),
+        /* no lone first or last line, and a lead-in line stays with the formula after it */
+        keep: (lines.length > 1 && (li === 0 || li === lines.length - 2)) || (lastOfPara && next && next.k === 'display'),
+        async draw(top) {
+          let x = PDF.margin;
+          const base = top + lead / 2 + asc;
+          for (const c of line.clusters) {
+            for (const a of c.atoms) { await a.draw(x, base); x += a.w; }
+            x += space + stretch;
+          }
+        }
+      });
+    });
+  });
+  return boxes;
+}
+function paginate(boxes, top, bottom) {
+  const pages = [[]]; let y = top;
+  boxes.forEach((box, i) => {
+    let need = box.h;
+    for (let j = i; boxes[j].keep && boxes[j + 1]; j++) need += boxes[j + 1].h;
+    if (need > bottom - top) need = box.h;
+    if (y + need > bottom && y > top) { pages.push([]); y = top; }
+    pages[pages.length - 1].push({ box, y });
+    y += box.h;
+  });
+  return pages;
+}
+const nextFrame = () => new Promise(r => setTimeout(r));
+async function buildPdf(blocks) {
+  await loadPdfLibs();
+  const doc = new window.jspdf.jsPDF({ unit: 'pt', format: 'a4', compress: true });
+  const pageW = doc.internal.pageSize.getWidth(), pageH = doc.internal.pageSize.getHeight();
+  const W = pageW - PDF.margin * 2, H = pageH - PDF.margin * 2;
+  const serif = '"Times New Roman",Times,"Noto Serif",serif', mono = 'Menlo,Consolas,monospace';
+  const winOnly = s => WIN_ANSI.test(s);
+  const fonts = { body: { name: 'times', covers: winOnly, css: serif }, err: { name: 'courier', covers: winOnly, css: mono } };
+  const problems = [];
+  if (!winOnly(textOfBlocks(blocks).normalize('NFC').replace(/\s/g, ' '))) {
+    try {
+      const data = await loadUnicodeFont();
+      doc.addFileToVFS('DejaVuSerif.ttf', data);
+      doc.addFont('DejaVuSerif.ttf', 'DejaVuSerif', 'normal', 'Identity-H');
+      doc.setFont('DejaVuSerif', 'normal');
+      const map = doc.getFont && doc.internal.getFont().metadata.cmap.unicode.codeMap;
+      fonts.body = { name: 'DejaVuSerif', css: serif, covers: s => [...s].every(ch => map[ch.codePointAt(0)]) };
+    } catch (e) {
+      problems.push('The extra font did not load, so accented text is drawn as images.');
+    }
+  }
+  shrunk = 0;
+  const boxes = layout(doc, blocks, fonts, W, H);
+  if (shrunk) problems.push(shrunk === 1 ? 'One large formula was shrunk to fit the page.' : `${shrunk} large formulas were shrunk to fit the page.`);
+  const pages = paginate(boxes, PDF.margin, pageH - PDF.margin);
+  let drawn = 0;
+  for (let p = 0; p < pages.length; p++) {
+    if (p) doc.addPage();
+    for (const { box, y } of pages[p]) {
+      await box.draw(y);
+      if (++drawn % 25 === 0) await nextFrame();
+    }
+    if (pages.length > 1) {
+      doc.setFont('times', 'normal'); doc.setFontSize(9.5); doc.setTextColor('#555555');
+      doc.text(String(p + 1), pageW / 2, pageH - 34, { align: 'center' });
+    }
+  }
+  doc.setProperties({ title: 'LaTeX document', subject: 'Exported from the LaTeX editor' });
+  return { doc, pages: pages.length, problems };
+}
+pdfBtn.onclick = async () => {
+  if (renderTimer || !current.blocks.length) renderNow();
+  if (!current.blocks.length) { showNote('There is nothing to export yet.'); return; }
+  if (!mathReady) { showNote(mathFailed ? 'The math engine did not load, so a PDF cannot be made. Reload to try again.' : 'Math is still loading. Try again in a moment.'); return; }
+  const label = pdfBtn.textContent;
+  pdfBtn.disabled = true; pdfBtn.textContent = 'Preparing…';
+  try {
+    const { doc, pages, problems } = await buildPdf(current.blocks);
+    doc.save('latex_equation.pdf');
+    const bad = current.errors.length;
+    const parts = [`Downloaded latex_equation.pdf, ${pages} ${pages === 1 ? 'page' : 'pages'}.`];
+    if (bad) parts.push(bad === 1 ? 'The math error is shown in red.' : `The ${bad} math errors are shown in red.`);
+    showNote(parts.concat(problems).join(' '));
+  } catch (e) {
+    console.warn(e);
+    showNote('The PDF could not be made. Check your connection and try again, or use your browser\'s Print command to save a PDF.', { sticky: true });
+  } finally {
+    pdfBtn.disabled = false; pdfBtn.textContent = label;
+  }
+};
+
+/* ---------- Start ---------- */
+function start() {
+  if (!openFromHash()) {
+    const draft = readDraft();
+    ta.value = draft === null ? SAMPLE : draft;
+  }
+  renderNow();
+  if (!storageOk) savedEl.textContent = 'Draft cannot be saved here';
+  else if (readDraft() !== null && !holdingShared) savedEl.textContent = 'Draft saved in this browser';
+  const s = document.createElement('script');
+  s.src = MATHJAX_URL; s.async = true;
+  s.onerror = mathLoadFailed;
+  document.head.append(s);
+}
+start();
+</script>
 </body>
 </html>

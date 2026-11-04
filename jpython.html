@@ -1,171 +1,1120 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Interactive Python Runner with Code Sharing</title>
-
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/monaco-editor@0.26.1/min/vs/editor/editor.main.min.css">
-
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>JPython: Python in the Browser</title>
+<meta name="description" content="Write and run Python in your browser with numpy and matplotlib. See print output, tracebacks and plots on the page, drag sliders that feed your script, and share code as a link.">
+<link rel="icon" type="image/svg+xml" href="media/favicon.svg">
 <style>
-body { font-family: Arial; background: #f5f5f5; margin: 20px; }
-h1 { color: #333; }
-#editor { width: 100%; height: 250px; border: 1px solid #ccc; border-radius: 8px; margin-bottom: 10px; }
-button { padding: 10px 20px; font-size: 16px; border: none; border-radius: 6px; background-color: #007bff; color: white; cursor: pointer; margin-bottom: 10px; }
-button:hover { background-color: #0056b3; }
-#plot { margin-top: 20px; }
-#controls { margin-top: 10px; display: flex; gap: 20px; flex-wrap: wrap; }
-.control { display: flex; flex-direction: column; }
-label { margin-bottom: 4px; font-weight: bold; }
-input[type=range] { width: 200px; }
-p, #status { color: #555; }
+  :root { --bg:#0d0f14; --ink:#ece9e2; --muted:#a3a5ae; --line:rgba(255,255,255,.15); --card:rgba(20,22,29,.9); --accent:#ffc978; --accent-ink:#1d1508;
+          --err:#ff9d8f; --err-bg:rgba(255,120,100,.1); --ok:#8fd6a0; --code-bg:#14161d;
+          --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif; --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+          color-scheme:dark; }
+  @media (prefers-color-scheme: light) { :root { --bg:#faf9f6; --ink:#1c1c1e; --muted:#5f5f66; --line:rgba(0,0,0,.16); --card:rgba(255,255,255,.93); --accent:#a84a24; --accent-ink:#fff;
+          --err:#ad2413; --err-bg:rgba(190,50,30,.07); --ok:#1d7a3a; --code-bg:#fff; color-scheme:light; } }
+  * { box-sizing:border-box; }
+  html,body { height:100%; margin:0; background:var(--bg); color:var(--ink); font-family:var(--sans); -webkit-font-smoothing:antialiased; }
+  button,select,input,textarea { font:inherit; color:inherit; }
+  a { color:var(--accent); }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  [hidden] { display:none !important; }
+  .glass { background:var(--card); border:1px solid var(--line); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:7px; background:transparent; border:1px solid var(--line); border-radius:999px; padding:7px 13px; font-size:.86rem; cursor:pointer; white-space:nowrap; min-height:36px; color:var(--ink); text-decoration:none; }
+  .btn:hover:not(:disabled) { border-color:var(--accent); }
+  .btn:disabled { opacity:.5; cursor:default; }
+  .btn.primary { background:var(--accent); border-color:var(--accent); color:var(--accent-ink); font-weight:600; }
+  .btn.small { padding:3px 10px; min-height:28px; font-size:.8rem; }
+  select.btn { padding-right:8px; background:var(--card); width:150px; flex:none; }
+  kbd { font-family:var(--mono); font-size:.72rem; opacity:.8; font-weight:400; }
+  @media (pointer:coarse) { .btn,select.btn { min-height:42px; } .btn.small { min-height:36px; } kbd { display:none; } }
+
+  body { display:flex; flex-direction:column; gap:10px; padding:calc(env(safe-area-inset-top,0px) + 12px) calc(env(safe-area-inset-right,0px) + 12px) calc(env(safe-area-inset-bottom,0px) + 12px) calc(env(safe-area-inset-left,0px) + 12px); height:100vh; height:100dvh; overflow:hidden; }
+  #top { display:flex; align-items:center; gap:12px; flex:none; }
+  #home { display:inline-flex; align-items:center; border-radius:999px; padding:8px 13px; font-size:.86rem; color:var(--ink); text-decoration:none; white-space:nowrap; min-height:36px; }
+  #top .titles { flex:1; min-width:0; display:flex; align-items:baseline; gap:10px; }
+  h1 { font-size:1.15rem; margin:0; letter-spacing:-.01em; white-space:nowrap; }
+  #tagline { margin:0; color:var(--muted); font-size:.86rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  #actions { flex:none; display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:6px; border-radius:22px; position:relative; overflow:hidden; }
+  #status { flex:1 1 200px; min-width:0; display:flex; align-items:center; gap:8px; padding:0 8px; font-size:.84rem; color:var(--muted); }
+  #status .dot { flex:none; width:8px; height:8px; border-radius:50%; background:var(--muted); }
+  #status[data-kind=busy] .dot { background:var(--accent); animation:pulse 1.2s ease-in-out infinite; }
+  #status[data-kind=ok] .dot { background:var(--ok); }
+  #status[data-kind=err] .dot { background:var(--err); }
+  #status[data-kind=err] { color:var(--err); }
+  #statusText { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #bar { position:absolute; left:0; right:0; bottom:0; height:2px; overflow:hidden; pointer-events:none; }
+  #bar i { display:block; height:100%; width:30%; background:var(--accent); animation:slide 1.3s ease-in-out infinite; }
+  @keyframes slide { from { transform:translateX(-100%); } to { transform:translateX(340%); } }
+  @keyframes pulse { 50% { opacity:.35; } }
+
+  #notice { flex:none; display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:8px 12px; border-radius:14px; font-size:.86rem; line-height:1.4; }
+  #notice.err { border-color:var(--err); }
+  #noticeText { flex:1 1 220px; min-width:0; overflow-wrap:anywhere; }
+  #shareUrl { flex:1 1 100%; width:100%; background:transparent; border:1px solid var(--line); border-radius:10px; padding:6px 10px; font-family:var(--mono); font-size:.78rem; min-height:36px; }
+
+  #panes { flex:1; min-height:0; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px; }
+  .pane { min-height:0; min-width:0; display:flex; flex-direction:column; border-radius:18px; overflow:hidden; scroll-margin-top:12px; }
+  .head { flex:none; display:flex; align-items:center; gap:8px; padding:8px 8px 8px 14px; border-bottom:1px solid var(--line); min-height:52px; }
+  .head h2 { flex:1; margin:0; font-size:.76rem; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); font-weight:600; }
+
+  #editorWrap { flex:1; min-height:0; position:relative; background:var(--code-bg); }
+  #monaco { position:absolute; inset:0; }
+  #code { position:absolute; inset:0; width:100%; height:100%; display:block; border:0; outline-offset:-2px; resize:none; background:transparent; padding:12px 14px; font-family:var(--mono); font-size:.88rem; line-height:1.5; white-space:pre; overflow:auto; tab-size:4; -webkit-text-size-adjust:100%; }
+  @media (pointer:coarse) { #code { font-size:16px; } }
+  .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+
+  #sliders { flex:none; display:grid; grid-template-columns:1fr 1fr; gap:6px 18px; padding:10px 14px; border-top:1px solid var(--line); }
+  .slider { min-width:0; display:flex; flex-direction:column; }
+  .slider label { display:flex; justify-content:space-between; gap:8px; font-size:.86rem; font-weight:600; }
+  .slider output { font-family:var(--mono); font-weight:400; font-variant-numeric:tabular-nums; }
+  .slider input { width:100%; accent-color:var(--accent); margin:0; height:28px; }
+  .slider code { font-family:var(--mono); font-size:.72rem; color:var(--muted); overflow:hidden; text-overflow:ellipsis; }
+  @media (pointer:coarse) { .slider input { height:42px; } }
+
+  #out { flex:1; min-height:0; overflow:auto; padding:12px 14px; font-size:.86rem; overscroll-behavior:contain; }
+  #out .empty { color:var(--muted); line-height:1.5; margin:0; font-family:var(--sans); }
+  #out pre { margin:0; font-family:var(--mono); font-size:.84rem; line-height:1.5; white-space:pre-wrap; overflow-wrap:anywhere; }
+  #out pre.err { color:var(--err); }
+  #out .trimmed { color:var(--muted); font-size:.8rem; font-style:italic; margin-bottom:6px; }
+  #out .note { color:var(--muted); font-size:.84rem; margin:6px 0; }
+  #out img { display:block; height:auto; max-width:100%; background:#fff; border-radius:10px; margin:10px 0; }
+  .trace { margin:10px 0; padding:10px 12px; border-left:3px solid var(--err); border-radius:0 10px 10px 0; background:var(--err-bg); }
+  #out .trace pre { color:inherit; }
+  #out .trace .summary { color:var(--err); font-weight:600; }
+  .trace .hint { margin:8px 0 0; font-size:.84rem; line-height:1.45; color:var(--muted); }
+  .trace .btn { margin-top:8px; }
+  .lite-note { flex:none; padding:7px 14px; font-size:.8rem; color:var(--muted); border-top:1px solid var(--line); line-height:1.4; }
+
+  @media (max-width:860px), (max-height:560px) {
+    html,body { height:auto; }
+    body { height:auto; min-height:100vh; min-height:100dvh; overflow:visible; }
+    #panes { display:flex; flex-direction:column; flex:none; }
+    .pane { overflow:visible; scroll-margin-top:96px; }
+    .pane > :first-child { border-radius:18px 18px 0 0; }
+    #editorWrap { flex:none; height:44vh; min-height:240px; }
+    #monaco, #code { border-radius:0; }
+    #outPane { min-height:50vh; }
+    #out { overflow:visible; flex:none; }
+    kbd { display:none; }
+    #actions { position:sticky; top:env(safe-area-inset-top,0px); z-index:5; border-radius:18px; }
+    #status { flex-basis:100%; padding:2px 6px 4px; }
+    #tagline { display:none; }
+  }
+  @media (max-width:420px) { #actions .btn { padding-left:11px; padding-right:11px; } #sliders { gap:6px 14px; } .slider code { font-size:.66rem; } }
+  @media (prefers-reduced-motion:reduce) { #bar i { animation:none; width:100%; opacity:.6; } #status[data-kind=busy] .dot { animation:none; } }
 </style>
 </head>
 <body>
+<header id="top">
+  <a id="home" class="glass" href="./">← Home</a>
+  <div class="titles">
+    <h1>JPython</h1>
+    <p id="tagline">Python in your browser, powered by Pyodide.</p>
+  </div>
+  <a class="btn" id="otherPage" href="jpython_plain.html" title="Open this code in the lightweight version">Lite version</a>
+</header>
 
-<h1>Interactive Python Runner with Code Sharing</h1>
-<div id="status">Loading...</div>
-<div id="editor"></div>
-<div id="controls">
-  <div class="control">
-    <label for="frequency">Frequency</label>
-    <input type="range" id="frequency" min="1" max="10" value="1" step="0.1">
-  </div>
-  <div class="control">
-    <label for="amplitude">Amplitude</label>
-    <input type="range" id="amplitude" min="1" max="5" value="1" step="0.1">
-  </div>
+<div id="actions" class="glass" role="toolbar" aria-label="Run controls">
+  <button class="btn primary" id="run" type="button">▶ Run <kbd id="runKey"></kbd></button>
+  <button class="btn" id="stop" type="button" disabled>Restart</button>
+  <button class="btn" id="clear" type="button">Clear</button>
+  <button class="btn" id="share" type="button">Share</button>
+  <div id="status" role="status" data-kind="busy"><span class="dot" aria-hidden="true"></span><span id="statusText">Starting…</span></div>
+  <div id="bar" aria-hidden="true"><i></i></div>
 </div>
-<button onclick="runPython()">Run Python</button>
-<button onclick="shareCode()">Share Code</button>
-<p>👉 Open DevTools console for <code>print()</code>. Plots show below:</p>
-<div id="plot"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.26.1/min/vs/loader.min.js"></script>
-<script src="https://cdn.jsdelivr.net/pyodide/v0.24.0/full/pyodide.js"></script>
+<div id="notice" class="glass" hidden>
+  <span id="noticeText" role="status"></span>
+  <input id="shareUrl" type="text" readonly aria-label="Share link" hidden>
+  <button class="btn small" id="noticeAction" type="button" hidden></button>
+  <button class="btn small" id="noticeClose" type="button">Dismiss</button>
+</div>
 
-<script>
-let editor, pyodideReadyPromise;
-const statusEl = document.getElementById("status");
+<main id="panes">
+  <section class="pane glass" aria-label="Code">
+    <div class="head">
+      <h2>Code</h2>
+      <label class="sr" for="examples">Load an example script</label>
+      <select class="btn" id="examples"><option value="">Examples…</option></select>
+      <button class="btn" id="editorToggle" type="button" hidden></button>
+    </div>
+    <div id="editorWrap">
+      <div id="monaco" hidden></div>
+      <label class="sr" for="code">Python code</label>
+      <textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" wrap="off" aria-describedby="codeHelp"></textarea>
+      <span class="sr" id="codeHelp">Tab inserts spaces. Press Escape, then Tab, to leave the editor. Control or Command plus Enter runs the code.</span>
+    </div>
+    <div id="sliders" role="group" aria-label="Sliders that set Python variables">
+      <div class="slider">
+        <label for="frequency">Frequency <output id="frequencyValue" for="frequency">1</output></label>
+        <input type="range" id="frequency" min="1" max="10" value="1" step="0.1">
+        <code>SINE_WAVE_FREQUENCY</code>
+      </div>
+      <div class="slider">
+        <label for="amplitude">Amplitude <output id="amplitudeValue" for="amplitude">1</output></label>
+        <input type="range" id="amplitude" min="1" max="5" value="1" step="0.1">
+        <code>SINE_WAVE_AMP</code>
+      </div>
+    </div>
+  </section>
 
-// --- Utility: load code from URL if exists ---
-function loadCodeFromURL() {
-  const params = new URLSearchParams(window.location.search);
-  const code = params.get("code");
-  return code ? decodeURIComponent(atob(code)) : null;
-}
+  <section class="pane glass" id="outPane" aria-label="Output">
+    <div class="head"><h2>Output</h2></div>
+    <div id="out" role="log" tabindex="0" aria-label="Program output"></div>
+  </section>
+</main>
+<noscript><p>This page runs Python with JavaScript, so it needs JavaScript turned on.</p></noscript>
 
-// --- Initialize Monaco Editor ---
-require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.26.1/min/vs' }});
-require(['vs/editor/editor.main'], function() {
-  const defaultCode = loadCodeFromURL() || `import matplotlib.pyplot as plt
+<script type="text/plain" class="example" data-name="Sine wave with sliders">
+# Drag the sliders: this script reruns each time.
+import matplotlib.pyplot as plt
 import numpy as np
-import time
 
-class Test:
-  def run(self):  
-    print("hello", Test)
-
-Test().run()
-
-# Slider variables
+# The two sliders set these variables.
 freq = SINE_WAVE_FREQUENCY
 amp = SINE_WAVE_AMP
 
-x = np.linspace(0, 10, 100)
-y = amp * np.sin(freq*x)
+x = np.linspace(0, 10, 500)
+y = amp * np.sin(freq * x)
 
 plt.plot(x, y)
-plt.title("Interactive Sine Wave")
+plt.ylim(-5.5, 5.5)
+plt.title("Interactive sine wave")
 plt.xlabel("x")
 plt.ylabel("y")
 plt.show()
 
-# time.sleep(1)
-print("Done ronnnnnning!")`;
-  
-  editor = monaco.editor.create(document.getElementById('editor'), {
-    value: defaultCode,
-    language: 'python',
-    theme: 'vs-dark',
-    automaticLayout: true
-  });
-});
+print(f"y = {amp:g} * sin({freq:g} * x)")
+</script>
+<script type="text/plain" class="example" data-name="Primes (no packages)">
+# Uses only the standard library, so it runs without any extra download.
+from collections import Counter
 
-// --- Load Pyodide ---
-async function loadPyodideLazy() {
-  statusEl.textContent = "⏳ Loading Pyodide...";
-  pyodideReadyPromise = loadPyodide({ indexURL: "https://cdn.jsdelivr.net/pyodide/v0.24.0/full/" });
-  await pyodideReadyPromise;
-  statusEl.textContent = "✅ Pyodide ready!";
-}
-loadPyodideLazy();
 
-// --- Run Python ---
-async function runPython() {
-  if (!editor || !pyodideReadyPromise) return;
-  const pyodide = await pyodideReadyPromise;
-  const code = editor.getValue();
-  const freq = parseFloat(document.getElementById("frequency").value);
-  const amp = parseFloat(document.getElementById("amplitude").value);
-  
-  document.getElementById("plot").innerHTML = "";
+def primes_below(n):
+    sieve = [True] * n
+    sieve[0:2] = [False, False]
+    for i in range(2, int(n ** 0.5) + 1):
+        if sieve[i]:
+            sieve[i * i :: i] = [False] * len(range(i * i, n, i))
+    return [i for i, is_prime in enumerate(sieve) if is_prime]
 
-  try {
-    await pyodide.loadPackage(["numpy", "matplotlib", "rasterio"]);
 
-    pyodide.runPython(`
-import sys
-from js import console
-import matplotlib
-# matplotlib.use("AGG")
+primes = primes_below(100)
+print(f"{len(primes)} primes below 100:")
+print(primes)
+
+print("\nHow often each last digit appears:")
+for digit, count in sorted(Counter(p % 10 for p in primes).items()):
+    print(f"  {digit}: {'#' * count} {count}")
+</script>
+<script type="text/plain" class="example" data-name="NumPy statistics">
+# A seeded generator gives the same numbers on every run.
 import matplotlib.pyplot as plt
-plt.close("all")
-# plt.show = lambda *args, **kwargs: None  # override show
-class ConsoleWriter:
-    def write(self,s): 
-        if s.strip(): console.log(s)
-    def flush(self): pass
-sys.stdout = ConsoleWriter()
-sys.stderr = ConsoleWriter()
-`);
+import numpy as np
 
-    pyodide.globals.set("SINE_WAVE_FREQUENCY", freq);
-    pyodide.globals.set("SINE_WAVE_AMP", amp);
-    await pyodide.runPythonAsync(code);
+rng = np.random.default_rng(42)
+scores = rng.normal(loc=100, scale=15, size=10_000)
 
-    const imgTag = await pyodide.runPythonAsync(`
-import io, base64
-if plt.get_fignums():
-    fig = plt.gcf()
-    buf = io.BytesIO()
-    fig.savefig(buf, format="png")
-    buf.seek(0)
-    img_bytes = base64.b64encode(buf.read()).decode("ascii")
+mean = scores.mean()
+std = scores.std()
+within_one_std = np.mean(np.abs(scores - mean) <= std)
+
+print(f"mean:   {mean:.2f}")
+print(f"std:    {std:.2f}")
+print(f"median: {np.median(scores):.2f}")
+print(f"within one std of the mean: {within_one_std:.1%}")
+
+plt.hist(scores, bins=40)
+plt.axvline(mean, color="black", linestyle="--", label="mean")
+plt.title("10,000 samples from a normal distribution")
+plt.xlabel("score")
+plt.ylabel("count")
+plt.legend()
+plt.show()
+</script>
+<script type="text/plain" class="example" data-name="Mandelbrot set">
+import matplotlib.pyplot as plt
+import numpy as np
+
+STEPS = 60
+
+x = np.linspace(-2.2, 0.8, 600)
+y = np.linspace(-1.0, 1.0, 400)
+c = x[np.newaxis, :] + 1j * y[:, np.newaxis]
+z = np.zeros_like(c)
+steps_bounded = np.zeros(c.shape, dtype=int)
+
+for _ in range(STEPS):
+    bounded = np.abs(z) <= 2
+    z[bounded] = z[bounded] ** 2 + c[bounded]
+    steps_bounded += bounded
+
+share = np.mean(steps_bounded == STEPS)
+print(f"{share:.1%} of this view is still bounded after {STEPS} steps.")
+
+plt.imshow(steps_bounded, extent=(-2.2, 0.8, -1.0, 1.0), origin="lower", cmap="magma")
+plt.title("Mandelbrot set")
+plt.xlabel("real part")
+plt.ylabel("imaginary part")
+plt.show()
+</script>
+<script type="text/plain" class="example" data-name="An error, on purpose">
+# Output printed before the error stays, and the traceback points at the line.
+def average(values):
+    return sum(values) / len(values)
+
+
+def report(groups):
+    for name, values in groups.items():
+        print(name, average(values))
+
+
+report({"first": [1, 2, 3], "second": [10, 20], "empty": []})
+</script>
+<script type="text/plain" class="example" data-name="Long run (try Stop)">
+# Output appears as it is printed. Stop ends the script at any point.
+import time
+
+print("Counting for 20 seconds. Press Stop to end early.")
+for second in range(1, 21):
+    time.sleep(1)
+    print(f"{second} s")
+print("Finished.")
+</script>
+<script type="text/plain" class="example" data-name="GeoTIFF with rasterio (large download)">
+# Writes a small raster to an in-memory GeoTIFF, reads it back and plots it.
+import matplotlib.pyplot as plt
+import numpy as np
+import rasterio
+from rasterio.io import MemoryFile
+from rasterio.transform import from_origin
+
+rows, cols = np.mgrid[0:100, 0:150]
+surface = (np.sin(cols / 12) + np.cos(rows / 9)).astype("float32")
+
+with MemoryFile() as memfile:
+    with memfile.open(
+        driver="GTiff",
+        height=surface.shape[0],
+        width=surface.shape[1],
+        count=1,
+        dtype="float32",
+        crs="EPSG:4326",
+        transform=from_origin(100.0, 20.0, 0.1, 0.1),
+    ) as dataset:
+        dataset.write(surface, 1)
+
+    with memfile.open() as dataset:
+        print("rasterio", rasterio.__version__)
+        print("driver:", dataset.driver)
+        print("size:", dataset.width, "x", dataset.height)
+        print("crs:", dataset.crs)
+        print("bounds:", tuple(dataset.bounds))
+        band = dataset.read(1)
+        bounds = dataset.bounds
+
+print("values match:", bool(np.array_equal(band, surface)))
+
+plt.imshow(band, extent=(bounds.left, bounds.right, bounds.bottom, bounds.top), cmap="viridis")
+plt.colorbar(label="value")
+plt.title("Raster read back from a GeoTIFF")
+plt.xlabel("longitude")
+plt.ylabel("latitude")
+plt.show()
+</script>
+
+<!-- Runs in a Web Worker: sets up Python and runs one script at a time. -->
+<script type="text/python" id="bootSource">
+import base64, io, json, linecache, logging, os, re, sys, time, traceback
+import __main__
+from js import console as _console
+from pyodide.code import eval_code_async
+
+# The default browser backend needs the page's DOM, which a worker does not have.
+os.environ["MPLBACKEND"] = "AGG"
+
+FILENAME = "main.py"
+_pending = []
+_window_start = 0.0
+_sent = 0
+
+
+def flush_output():
+    global _window_start, _sent
+    if _pending:
+        stream = _pending[0][0]
+        chunk = []
+        for item in _pending:
+            if item[0] != stream:
+                emit(stream, "".join(chunk))
+                stream, chunk = item[0], []
+            chunk.append(item[1])
+        emit(stream, "".join(chunk))
+        _pending.clear()
+        _sent += 1
+
+
+def write_output(stream, text):
+    # Normal scripts stream at once. A tight print loop gets batched so that it
+    # cannot flood the page with messages.
+    global _window_start, _sent
+    _pending.append((stream, text))
+    now = time.monotonic()
+    if now - _window_start > 0.05:
+        _window_start, _sent = now, 0
+    if _sent < 20:
+        flush_output()
+
+
+class Stream(io.TextIOBase):
+    encoding = "utf-8"
+    errors = "replace"
+
+    def __init__(self, stream):
+        self._stream = stream
+
+    def writable(self):
+        return True
+
+    def isatty(self):
+        return False
+
+    def write(self, text):
+        if text:
+            write_output(self._stream, str(text))
+        return len(text)
+
+    def flush(self):
+        flush_output()
+
+
+_stdout = Stream("out")
+_stderr = Stream("err")
+
+
+def show_figures(*args, **kwargs):
+    import matplotlib.pyplot as plt
+
+    flush_output()
+    for num in plt.get_fignums():
+        fig = plt.figure(num)
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", dpi=144)
+        titles = [ax.get_title() for ax in fig.axes if ax.get_title()]
+        if getattr(fig, "_suptitle", None):
+            titles.insert(0, fig._suptitle.get_text())
+        alt = "Plot: " + ", ".join(titles) if titles else "Plot"
+        plot(base64.b64encode(buf.getvalue()).decode("ascii"), float(fig.get_size_inches()[0] * 100), alt)
     plt.close("all")
-    f"<img src='data:image/png;base64,{img_bytes}'/>"
-else:
-    ""
-`);
-    if (imgTag) document.getElementById("plot").innerHTML = imgTag;
 
-  } catch (err) {
-    console.error("Python error:", err);
-    statusEl.textContent = "❌ Python error. Check console.";
+
+def describe_error(exc):
+    tb = exc.__traceback__
+    while tb is not None and tb.tb_frame.f_code.co_filename != FILENAME:
+        tb = tb.tb_next
+    line = None
+    walk = tb
+    while walk is not None:
+        if walk.tb_frame.f_code.co_filename == FILENAME:
+            line = walk.tb_lineno
+        walk = walk.tb_next
+    if isinstance(exc, SyntaxError) and exc.filename == FILENAME:
+        line = exc.lineno
+    hint = None
+    message = str(exc)
+    if isinstance(exc, EOFError):
+        hint = "input() cannot pause a script on this page. Set the value in your code instead."
+    elif isinstance(exc, (ImportError, AttributeError)) and re.search(r"\b(document|window|alert|prompt)\b", message):
+        hint = "Python runs in a background worker here so that Stop can work, and a worker cannot reach the page (document, window, alert)."
+    return {
+        "ok": False,
+        "error": "".join(traceback.format_exception(type(exc), exc, tb)),
+        "summary": "".join(traceback.format_exception_only(type(exc), exc)).strip(),
+        "line": line,
+        "hint": hint,
+    }
+
+
+async def run(code, frequency, amplitude, uses_pyplot):
+    g = __main__.__dict__
+    g["SINE_WAVE_FREQUENCY"] = frequency
+    g["SINE_WAVE_AMP"] = amplitude
+    # Earlier versions of this page left these names defined, so scripts in old
+    # share links may use them without importing them.
+    g.setdefault("sys", sys)
+    g.setdefault("io", io)
+    g.setdefault("base64", base64)
+    g.setdefault("console", _console)
+
+    if uses_pyplot or "matplotlib.pyplot" in sys.modules:
+        # A fresh Python rebuilds the font cache, and says so on stderr.
+        logging.getLogger("matplotlib.font_manager").setLevel(logging.ERROR)
+        import matplotlib
+        import matplotlib.pyplot as plt
+
+        plt.show = show_figures
+        plt.close("all")
+        g.setdefault("matplotlib", matplotlib)
+        g.setdefault("plt", plt)
+
+    sys.stdout, sys.stderr, sys.stdin = _stdout, _stderr, io.StringIO("")
+    linecache.cache[FILENAME] = (len(code), None, code.splitlines(True), FILENAME)
+
+    result = {"ok": True}
+    try:
+        await eval_code_async(code, g, filename=FILENAME)
+    except SystemExit as exc:
+        if exc.code not in (None, 0):
+            result = {"ok": False, "error": f"SystemExit: {exc.code}\n", "summary": f"SystemExit: {exc.code}", "line": None, "hint": None}
+    except BaseException as exc:
+        result = describe_error(exc)
+
+    if "matplotlib.pyplot" in sys.modules:
+        try:
+            show_figures()
+        except Exception as exc:
+            if result["ok"]:
+                result = describe_error(exc)
+    sys.stdout, sys.stderr = _stdout, _stderr
+    flush_output()
+    return json.dumps(result)
+</script>
+
+<script type="text/plain" id="workerSource">
+let py, runFn;
+const toStatus = (text) => postMessage({ type: 'status', text });
+const onPackageMessage = (msg) => { if (/^Loading /.test(msg)) toStatus(msg.replace(/^Loading /, 'Downloading ').slice(0, 120) + '…'); };
+const onPackageError = (msg) => postMessage({ type: 'text', stream: 'err', text: msg + '\n' });
+
+async function init(m) {
+  try {
+    importScripts(m.base + 'pyodide.js');
+    py = await loadPyodide({
+      indexURL: m.base,
+      stdout: (text) => postMessage({ type: 'text', stream: 'out', text: text + '\n' }),
+      stderr: (text) => postMessage({ type: 'text', stream: 'err', text: text + '\n' }),
+    });
+    const ns = py.globals.get('dict')();
+    ns.set('__name__', '_jpython');
+    ns.set('emit', (stream, text) => postMessage({ type: 'text', stream, text }));
+    ns.set('plot', (data, width, alt) => postMessage({ type: 'plot', data, width, alt }));
+    py.runPython(m.boot, { globals: ns });
+    runFn = ns.get('run');
+    postMessage({ type: 'ready', version: py.version });
+  } catch (e) {
+    postMessage({ type: 'failed', error: String((e && e.message) || e) });
   }
 }
 
-// --- Share code ---
-function shareCode() {
-  const code = editor.getValue();
-  const encoded = btoa(encodeURIComponent(code));
-  const url = `${window.location.origin}${window.location.pathname}?code=${encoded}`;
-  navigator.clipboard.writeText(url).then(() => alert("Shareable link copied to clipboard!"));
+async function run(m) {
+  let result;
+  try {
+    const options = { messageCallback: onPackageMessage, errorCallback: onPackageError };
+    await py.loadPackagesFromImports(m.code, options);
+    const usesPyplot = /\b(plt|pyplot|matplotlib)\b/.test(m.code);
+    if (usesPyplot) await py.loadPackage('matplotlib', options);
+    toStatus('Running…');
+    result = JSON.parse(await runFn(m.code, m.frequency, m.amplitude, usesPyplot));
+  } catch (e) {
+    const text = String((e && e.message) || e);
+    result = { ok: false, error: text + '\n', summary: text.trim().split('\n').pop(), line: null, hint: null, fatal: !!(e && e.pyodide_fatal_error) };
+  }
+  postMessage({ type: 'done', id: m.id, result });
 }
 
-// --- Live sliders ---
-document.getElementById("frequency").addEventListener("input", runPython);
-document.getElementById("amplitude").addEventListener("input", runPython);
+// A crash inside Python's WebAssembly never settles the run and raises no error
+// event here. Pyodide's console message is the one reliable sign of it.
+const consoleError = console.error;
+console.error = (...args) => {
+  if (String(args[0]).startsWith('Pyodide has suffered a fatal error')) postMessage({ type: 'crashed' });
+  consoleError.apply(console, args);
+};
 
+self.onmessage = ({ data }) => { if (data.type === 'init') init(data); else if (data.type === 'run') run(data); };
+</script>
+
+<script>
+(() => {
+  // Pyodide 0.27.7 is the oldest release that includes rasterio.
+  const PYODIDE_BASE = 'https://cdn.jsdelivr.net/pyodide/v0.27.7/full/';
+  const MONACO_BASE = 'https://cdn.jsdelivr.net/npm/monaco-editor@0.26.1/min/';
+  const MAX_OUTPUT = 200000;   // characters kept in the output panel
+  const BLOCK_SIZE = 8000;     // characters in one block of text
+  const PLOT_COST = 20000;     // how much of that budget one plot uses
+  const MAX_LINK = 8000;
+
+  const $ = (id) => document.getElementById(id);
+  const out = $('out'), codeEl = $('code'), runBtn = $('run'), stopBtn = $('stop');
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  const stacked = matchMedia('(max-width:860px), (max-height:560px)');
+
+  // ---------- Examples ----------
+  const examples = [...document.querySelectorAll('script.example')].map((el) => ({ name: el.dataset.name, code: el.textContent.replace(/^\s*\n/, '').replace(/\s+$/, '') + '\n' }));
+  examples.forEach((ex, i) => {
+    const opt = document.createElement('option');
+    opt.value = String(i);
+    opt.textContent = ex.name;
+    $('examples').append(opt);
+  });
+
+  // ---------- Share links ----------
+  // Format: ?code=btoa(encodeURIComponent(source)). Old links left "+" raw in
+  // the query, so read the raw value rather than URLSearchParams, which would
+  // turn it into a space and corrupt the code.
+  function readSharedCode() {
+    const match = /[?&]code=([^&#]*)/.exec(location.search);
+    if (!match || !match[1]) return null;
+    let b64 = match[1];
+    try { b64 = decodeURIComponent(b64); } catch (e) { /* use it as it is */ }
+    return decodeURIComponent(atob(b64.replace(/ /g, '+')));
+  }
+  function encodeCode(source) {
+    return btoa(encodeURIComponent(source)).replace(/\+/g, '%2B');
+  }
+
+  // ---------- Notices ----------
+  let noticeAction = null;
+  function notice(text, { error = false, action = null, url = null } = {}) {
+    $('notice').hidden = false;
+    $('notice').classList.toggle('err', error);
+    $('noticeText').textContent = text;
+    $('shareUrl').hidden = !url;
+    if (url) $('shareUrl').value = url;
+    noticeAction = action;
+    $('noticeAction').hidden = !action;
+    if (action) $('noticeAction').textContent = action.label;
+  }
+  function hideNotice() { $('notice').hidden = true; noticeAction = null; }
+  $('noticeClose').addEventListener('click', hideNotice);
+  $('noticeAction').addEventListener('click', () => { if (noticeAction) noticeAction.run(); });
+  $('shareUrl').addEventListener('focus', (e) => e.target.select());
+
+  // ---------- Editor ----------
+  let monacoEditor = null, monacoWanted = false, monacoLoading = false, monacoFailed = false;
+  const PREF_KEY = 'jpython.editor';
+  function getPref() { try { return localStorage.getItem(PREF_KEY); } catch (e) { return null; } }
+  function setPref(v) { try { localStorage.setItem(PREF_KEY, v); } catch (e) { /* not saved */ } }
+  function getCode() {
+    if (monacoEditor && monacoWanted) return monacoEditor.getValue();
+    return codeEl.value;
+  }
+  function setCode(text) {
+    codeEl.value = text;
+    if (monacoEditor) monacoEditor.setValue(text);
+  }
+  function goToLine(line) {
+    if (monacoEditor && monacoWanted) {
+      monacoEditor.revealLineInCenter(line);
+      monacoEditor.setPosition({ lineNumber: line, column: 1 });
+      monacoEditor.focus();
+      return;
+    }
+    const lines = codeEl.value.split('\n');
+    const start = lines.slice(0, line - 1).join('\n').length + (line > 1 ? 1 : 0);
+    const end = start + (lines[line - 1] || '').length;
+    codeEl.focus();
+    codeEl.setSelectionRange(start, end);
+    const lineHeight = parseFloat(getComputedStyle(codeEl).lineHeight) || 20;
+    codeEl.scrollTop = Math.max(0, (line - 3) * lineHeight);
+    if (stacked.matches) $('editorWrap').scrollIntoView({ block: 'center' });
+  }
+  function insertText(text) {
+    // execCommand is old, but it is the only way to keep the browser's undo history.
+    if (!document.execCommand('insertText', false, text)) codeEl.setRangeText(text, codeEl.selectionStart, codeEl.selectionEnd, 'end');
+  }
+  let tabEscapes = false;
+  codeEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { tabEscapes = true; return; }
+    if (e.key === 'Tab' && !tabEscapes && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault();
+      const start = codeEl.selectionStart;
+      const lineStart = codeEl.value.lastIndexOf('\n', start - 1) + 1;
+      if (e.shiftKey) {
+        const spaces = /^ {1,4}/.exec(codeEl.value.slice(lineStart));
+        if (spaces) { codeEl.setSelectionRange(lineStart, lineStart + spaces[0].length); document.execCommand('delete'); }
+      } else {
+        insertText(' '.repeat(4 - ((start - lineStart) % 4)));
+      }
+    } else if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
+      const start = codeEl.selectionStart;
+      const lineStart = codeEl.value.lastIndexOf('\n', start - 1) + 1;
+      const line = codeEl.value.slice(lineStart, start);
+      const indent = /^[ \t]*/.exec(line)[0] + (/:\s*$/.test(line) ? '    ' : '');
+      if (indent) { e.preventDefault(); insertText('\n' + indent); }
+    }
+    if (e.key !== 'Escape') tabEscapes = false;
+  });
+
+  function monacoTheme() { return matchMedia('(prefers-color-scheme: light)').matches ? 'jpython-light' : 'jpython-dark'; }
+  function showEditor() {
+    const useMonaco = monacoWanted && !!monacoEditor;
+    $('monaco').hidden = !useMonaco;
+    codeEl.hidden = useMonaco;
+    $('editorToggle').hidden = monacoFailed;
+    $('editorToggle').textContent = monacoWanted ? 'Plain editor' : 'Code editor';
+    if (useMonaco) monacoEditor.layout();
+  }
+  function loadMonaco() {
+    if (monacoEditor || monacoLoading) return;
+    monacoLoading = true;
+    const fail = () => {
+      monacoLoading = false;
+      monacoFailed = true;
+      monacoWanted = false;
+      showEditor();
+      notice('The code editor could not be downloaded, so this is the plain editor. Running and sharing still work.', { error: true });
+    };
+    // Monaco's helper workers must come from the same CDN, through a small proxy script.
+    window.MonacoEnvironment = {
+      getWorkerUrl: () => 'data:text/javascript;charset=utf-8,' + encodeURIComponent(
+        `self.MonacoEnvironment={baseUrl:'${MONACO_BASE}'};importScripts('${MONACO_BASE}vs/base/worker/workerMain.js');`),
+    };
+    const loader = document.createElement('script');
+    loader.src = MONACO_BASE + 'vs/loader.min.js';
+    loader.onerror = fail;
+    loader.onload = () => {
+      window.require.config({ paths: { vs: MONACO_BASE + 'vs' } });
+      window.require.onError = fail;
+      window.require(['vs/editor/editor.main'], () => {
+        const monaco = window.monaco;
+        monaco.editor.defineTheme('jpython-dark', { base: 'vs-dark', inherit: true, rules: [], colors: { 'editor.background': '#14161d' } });
+        monaco.editor.defineTheme('jpython-light', { base: 'vs', inherit: true, rules: [], colors: { 'editor.background': '#ffffff' } });
+        $('monaco').hidden = false;
+        monacoEditor = monaco.editor.create($('monaco'), {
+          value: codeEl.value, language: 'python', theme: monacoTheme(), automaticLayout: true,
+          minimap: { enabled: false }, scrollBeyondLastLine: false, fontSize: 14, tabSize: 4,
+          ariaLabel: 'Python code', padding: { top: 8 },
+        });
+        monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => requestRun());
+        monacoEditor.onDidChangeModelContent(() => monaco.editor.setModelMarkers(monacoEditor.getModel(), 'python', []));
+        matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => monaco.editor.setTheme(monacoTheme()));
+        monacoLoading = false;
+        showEditor();
+      }, fail);
+    };
+    document.head.append(loader);
+  }
+  $('editorToggle').addEventListener('click', () => {
+    if (monacoWanted) {
+      if (monacoEditor) codeEl.value = monacoEditor.getValue();
+      monacoWanted = false;
+      setPref('plain');
+    } else {
+      if (monacoEditor) monacoEditor.setValue(codeEl.value);
+      monacoWanted = true;
+      setPref('monaco');
+      loadMonaco();
+    }
+    showEditor();
+  });
+  function markError(line, summary) {
+    if (!monacoEditor || !monacoWanted || !line) return;
+    window.monaco.editor.setModelMarkers(monacoEditor.getModel(), 'python', [{
+      startLineNumber: line, endLineNumber: line, startColumn: 1, endColumn: monacoEditor.getModel().getLineMaxColumn(Math.min(line, monacoEditor.getModel().getLineCount())),
+      message: summary, severity: window.monaco.MarkerSeverity.Error,
+    }]);
+  }
+
+  // ---------- Output ----------
+  let current = null, currentPre = null, currentStream = null, outputSize = 0, attachTimer = 0, scrollQueued = false;
+  let textQueue = [], queuedChars = 0, flushTimer = 0, flushDelay = 16, droppedText = false;
+  function emptyMessage(text) {
+    const p = document.createElement('p');
+    p.className = 'empty';
+    p.textContent = text;
+    out.replaceChildren(p);
+    current = currentPre = currentStream = null;
+    outputSize = 0;
+    discardQueuedText();
+  }
+  function discardQueuedText() {
+    clearTimeout(flushTimer);
+    flushTimer = 0;
+    textQueue = [];
+    queuedChars = 0;
+    droppedText = false;
+  }
+  const emptyText = 'print() output, errors and plots appear here. Press Run to start.';
+  function nearBottom(el) { return el.scrollHeight - el.scrollTop - el.clientHeight < 60; }
+  function followOutput(wasNear) {
+    if (!wasNear || scrollQueued) return;
+    scrollQueued = true;
+    requestAnimationFrame(() => { scrollQueued = false; out.scrollTop = out.scrollHeight; });
+  }
+  function beginOutput(quiet) {
+    clearTimeout(attachTimer);
+    current = document.createElement('div');
+    currentPre = currentStream = null;
+    outputSize = 0;
+    discardQueuedText();
+    // A slider rerun keeps the old plot on screen until the new one is ready, so
+    // that dragging does not flicker.
+    if (quiet && !out.querySelector('.empty')) attachTimer = setTimeout(attachOutput, 500);
+    else attachOutput();
+  }
+  function attachOutput() {
+    clearTimeout(attachTimer);
+    if (current && current.parentNode !== out) {
+      const top = out.scrollTop;
+      out.replaceChildren(current);
+      out.scrollTop = top;
+    }
+  }
+  function ensureOutput() {
+    if (!current) { current = document.createElement('div'); out.replaceChildren(current); outputSize = 0; }
+    return current;
+  }
+  function trimOutput() {
+    if (outputSize <= MAX_OUTPUT && !droppedText) return;
+    droppedText = false;
+    let mark = current.querySelector('.trimmed');
+    if (!mark) {
+      mark = document.createElement('div');
+      mark.className = 'trimmed';
+      mark.textContent = 'Earlier output was removed to keep the page fast.';
+      current.prepend(mark);
+    }
+    while (outputSize > MAX_OUTPUT && mark.nextElementSibling) {
+      const next = mark.nextElementSibling;
+      if (next === currentPre) {
+        const excess = Math.min(outputSize - MAX_OUTPUT, next.firstChild.length);
+        next.firstChild.deleteData(0, excess);
+        outputSize -= excess;
+        break;
+      }
+      outputSize -= next.tagName === 'PRE' ? next.firstChild.length : next.tagName === 'IMG' ? PLOT_COST : 0;
+      next.remove();
+    }
+  }
+  // Text is written in batches, with one layout per batch, so that a tight print
+  // loop cannot freeze the page. New blocks keep each layout small.
+  function addText(stream, text) {
+    textQueue.push([stream, text]);
+    queuedChars += text.length;
+    while (queuedChars - textQueue[0][1].length > MAX_OUTPUT) {
+      queuedChars -= textQueue.shift()[1].length;
+      droppedText = true;
+    }
+    if (!flushTimer) flushTimer = setTimeout(flushText, flushDelay);
+  }
+  function flushText() {
+    clearTimeout(flushTimer);
+    flushTimer = 0;
+    if (!textQueue.length) return;
+    const began = performance.now();
+    const near = nearBottom(out);
+    ensureOutput();
+    for (const [stream, whole] of textQueue) {
+      for (let start = 0; start < whole.length;) {
+        // Blocks end at a line break, because each one starts on a new line.
+        let end = whole.length;
+        if (end - start > BLOCK_SIZE) {
+          const lineEnd = whole.lastIndexOf('\n', start + BLOCK_SIZE);
+          end = lineEnd > start ? lineEnd + 1 : start + BLOCK_SIZE;
+        }
+        const full = currentPre && currentPre.firstChild.length > BLOCK_SIZE && currentPre.firstChild.data.endsWith('\n');
+        if (!currentPre || currentStream !== stream || full) {
+          currentPre = document.createElement('pre');
+          if (stream === 'err') currentPre.className = 'err';
+          currentPre.append(document.createTextNode(''));
+          currentStream = stream;
+          current.append(currentPre);
+        }
+        currentPre.firstChild.appendData(whole.slice(start, end));
+        outputSize += end - start;
+        start = end;
+      }
+    }
+    textQueue = [];
+    queuedChars = 0;
+    trimOutput();
+    followOutput(near);
+    flushDelay = Math.min(500, Math.max(16, (performance.now() - began) * 3));
+  }
+  function addPlot(m) {
+    flushText();
+    const near = nearBottom(out);
+    ensureOutput();
+    currentPre = currentStream = null;
+    const img = new Image();
+    img.alt = m.alt;
+    img.style.width = Math.round(m.width) + 'px';
+    img.addEventListener('load', () => followOutput(near));
+    img.src = 'data:image/png;base64,' + m.data;
+    current.append(img);
+    outputSize += PLOT_COST;
+    trimOutput();
+  }
+  function addError(r) {
+    flushText();
+    const near = nearBottom(out);
+    ensureOutput();
+    currentPre = currentStream = null;
+    const box = document.createElement('div');
+    box.className = 'trace';
+    const text = r.error.replace(/\s+$/, '');
+    const pre = document.createElement('pre');
+    const summary = document.createElement('span');
+    summary.className = 'summary';
+    if (r.summary && text.endsWith(r.summary)) {
+      pre.append(document.createTextNode(text.slice(0, text.length - r.summary.length)));
+      summary.textContent = r.summary;
+    } else {
+      summary.textContent = text;
+    }
+    pre.append(summary);
+    box.append(pre);
+    if (r.hint) {
+      const hint = document.createElement('p');
+      hint.className = 'hint';
+      hint.textContent = r.hint;
+      box.append(hint);
+    }
+    if (r.line) {
+      const go = document.createElement('button');
+      go.type = 'button';
+      go.className = 'btn small';
+      go.textContent = `Go to line ${r.line}`;
+      go.addEventListener('click', () => goToLine(r.line));
+      box.append(go);
+    }
+    current.append(box);
+    followOutput(near);
+  }
+  function addNote(text) {
+    flushText();
+    ensureOutput();
+    currentPre = currentStream = null;
+    const note = document.createElement('p');
+    note.className = 'note';
+    note.textContent = text;
+    current.append(note);
+  }
+
+  // ---------- Status ----------
+  let phase = 'loading', tickTimer = 0, tickStart = 0, tickLabel = '';
+  function setStatus(text, kind) {
+    clearInterval(tickTimer);
+    $('statusText').textContent = text;
+    $('status').dataset.kind = kind;
+    $('bar').hidden = kind !== 'busy';
+  }
+  function tickingStatus(label) {
+    setStatus(label, 'busy');
+    tickLabel = label;
+    tickStart = performance.now();
+    tickTimer = setInterval(() => {
+      const seconds = Math.floor((performance.now() - tickStart) / 1000);
+      // Written straight to the node so screen readers are not told every second.
+      if (seconds >= 2) $('statusText').textContent = `${tickLabel} ${seconds} s`;
+    }, 1000);
+  }
+  function setPhase(next) {
+    phase = next;
+    stopBtn.disabled = next === 'loading' && !pending;
+    stopBtn.textContent = next === 'running' || (next === 'loading' && pending) ? 'Stop' : next === 'failed' ? 'Retry' : 'Restart';
+    stopBtn.title = next === 'running'
+      ? 'Ends the script and starts a fresh Python. Variables from earlier runs are lost.'
+      : 'Starts a fresh Python. Variables from earlier runs are lost.';
+  }
+
+  // ---------- Python worker ----------
+  // Python runs in a worker so that the page stays responsive and Stop can end
+  // any script. Stop has to end the whole worker: interrupting Python more
+  // gently needs cross-origin isolation headers, which GitHub Pages cannot send.
+  let worker = null, workerUrl = null, pending = null, runId = 0, runStart = 0, firstLoad = true;
+  function startWorker() {
+    if (worker) worker.terminate();
+    if (!workerUrl) workerUrl = URL.createObjectURL(new Blob([$('workerSource').textContent], { type: 'text/javascript' }));
+    setPhase('loading');
+    tickingStatus(firstLoad ? 'Loading Python (about 6 MB the first time)…' : 'Restarting Python…');
+    firstLoad = false;
+    worker = new Worker(workerUrl);
+    worker.onmessage = onWorkerMessage;
+    worker.onerror = (e) => {
+      e.preventDefault();
+      workerCrashed(e.message || 'The Python worker stopped unexpectedly.');
+    };
+    worker.postMessage({ type: 'init', base: PYODIDE_BASE, boot: $('bootSource').textContent });
+  }
+  function workerCrashed(message) {
+    if (phase === 'running') {
+      flushText();
+      attachOutput();
+      addError({ error: message, summary: message, line: null, hint: 'Python is restarting, so variables from earlier runs are gone.' });
+      pending = null;
+      startWorker();
+    } else {
+      loadFailed(message);
+    }
+  }
+  function loadFailed(message) {
+    if (worker) worker.terminate();
+    worker = null;
+    pending = null;
+    setPhase('failed');
+    setStatus('Python could not be loaded', 'err');
+    notice(`Python could not be downloaded from the CDN. Check your connection and try again. (${message})`, { error: true, action: { label: 'Retry', run: () => { hideNotice(); startWorker(); } } });
+  }
+  function onWorkerMessage({ data: m }) {
+    if (m.type === 'text') {
+      addText(m.stream, m.text);
+    } else if (m.type === 'plot') {
+      addPlot(m);
+    } else if (m.type === 'status') {
+      if (phase === 'running') {
+        tickingStatus(m.text);
+      }
+    } else if (m.type === 'ready') {
+      setPhase('idle');
+      if (pending) {
+        const next = pending;
+        pending = null;
+        startRun(next.quiet);
+      } else {
+        setStatus(`Ready (Pyodide ${m.version})`, 'ok');
+      }
+    } else if (m.type === 'crashed') {
+      workerCrashed('Python crashed inside its WebAssembly runtime.');
+    } else if (m.type === 'failed') {
+      loadFailed(m.error);
+    } else if (m.type === 'done') {
+      finishRun(m.result);
+    }
+  }
+  function requestRun(quiet = false) {
+    if (phase === 'failed') { pending = { quiet }; startWorker(); setPhase('loading'); return; }
+    if (phase !== 'idle') {
+      pending = { quiet: pending ? pending.quiet && quiet : quiet };
+      if (phase === 'loading') { setPhase('loading'); tickLabel = 'Will run when Python is ready…'; $('statusText').textContent = tickLabel; }
+      else if (!quiet) { tickLabel = 'Will run again when this finishes…'; $('statusText').textContent = tickLabel; }
+      return;
+    }
+    startRun(quiet);
+  }
+  function startRun(quiet) {
+    setPhase('running');
+    tickingStatus('Running…');
+    runStart = performance.now();
+    beginOutput(quiet);
+    if (monacoEditor) window.monaco.editor.setModelMarkers(monacoEditor.getModel(), 'python', []);
+    if (!quiet && stacked.matches) $('outPane').scrollIntoView({ block: 'start', behavior: reducedMotion.matches ? 'auto' : 'smooth' });
+    const message = { type: 'run', id: ++runId, code: getCode(), frequency: 1, amplitude: 1 };
+    message.frequency = parseFloat($('frequency').value);
+    message.amplitude = parseFloat($('amplitude').value);
+    worker.postMessage(message);
+  }
+  function finishRun(r) {
+    const elapsed = performance.now() - runStart;
+    const seconds = (elapsed / 1000).toFixed(elapsed < 10000 ? 2 : 0);
+    flushText();
+    attachOutput();
+    if (r.ok) {
+      if (!out.querySelector('pre, img')) addNote('The script finished without printing anything.');
+      setStatus(`Finished in ${seconds} s`, 'ok');
+    } else {
+      addError(r);
+      markError(r.line, r.summary);
+      setStatus(r.line ? `Error on line ${r.line}` : 'Error', 'err');
+    }
+    setPhase('idle');
+    if (r.fatal) {
+      addNote('Python crashed and is restarting. Variables from earlier runs are gone.');
+      startWorker();
+      return;
+    }
+    if (pending) {
+      const next = pending;
+      pending = null;
+      startRun(next.quiet);
+    }
+  }
+  function stopOrRestart() {
+    if (phase === 'failed') { hideNotice(); startWorker(); return; }
+    const wasRunning = phase === 'running';
+    const hadQueued = phase === 'loading' && pending;
+    pending = null;
+    if (hadQueued) { setPhase('loading'); tickLabel = 'Starting Python…'; $('statusText').textContent = tickLabel; return; }
+    attachOutput();
+    if (wasRunning) addNote('Stopped. Python is restarting, so variables from earlier runs are gone.');
+    else if (out.querySelector('.empty')) { /* nothing to report */ } else addNote('Python restarted. Variables from earlier runs are gone.');
+    startWorker();
+  }
+
+  // ---------- Controls ----------
+  runBtn.addEventListener('click', () => requestRun());
+  stopBtn.addEventListener('click', stopOrRestart);
+  $('clear').addEventListener('click', () => {
+    clearTimeout(attachTimer);
+    emptyMessage(phase === 'running' ? 'Output cleared. The script is still running.' : emptyText);
+  });
+  $('share').addEventListener('click', async () => {
+    let query;
+    try {
+      query = '?code=' + encodeCode(getCode());
+    } catch (e) {
+      notice('This code contains a character that cannot be put in a link.', { error: true });
+      return;
+    }
+    const frequency = $('frequency'), amplitude = $('amplitude');
+    if (frequency.value !== frequency.defaultValue) query += '&frequency=' + encodeURIComponent(frequency.value);
+    if (amplitude.value !== amplitude.defaultValue) query += '&amplitude=' + encodeURIComponent(amplitude.value);
+    const url = location.origin + location.pathname + query;
+    const tooLong = url.length > MAX_LINK ? ' This link is very long, and some sites may refuse it.' : '';
+    let copied = false;
+    try { await navigator.clipboard.writeText(url); copied = true; } catch (e) { /* show the link instead */ }
+    notice((copied ? 'Link copied.' : 'Copy this link.') + tooLong, { url });
+    if (!copied) $('shareUrl').focus();
+  });
+  $('examples').addEventListener('change', (e) => {
+    const example = examples[Number(e.target.value)];
+    e.target.value = '';
+    if (!example) return;
+    const previous = getCode();
+    setCode(example.code);
+    if (examples.some((ex) => ex.code === previous)) notice(`Loaded "${example.name}". Press Run to try it.`);
+    else notice(`Loaded "${example.name}". Press Run to try it.`, { action: { label: 'Bring back my code', run: () => { setCode(previous); hideNotice(); } } });
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !e.defaultPrevented) { e.preventDefault(); requestRun(); }
+  });
+  $('runKey').textContent = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘↵' : 'Ctrl+↵';
+  $('runKey').setAttribute('aria-hidden', 'true');
+  runBtn.setAttribute('aria-keyshortcuts', 'Control+Enter Meta+Enter');
+  $('otherPage').addEventListener('click', (e) => {
+    const code = getCode();
+    if (code === examples[0].code) return;
+    try { e.currentTarget.href = e.currentTarget.getAttribute('href').split('?')[0] + '?code=' + encodeCode(code); } catch (err) { /* open without the code */ }
+  });
+
+  // ---------- Sliders ----------
+  for (const id of ['frequency', 'amplitude']) {
+    const slider = $(id);
+    const show = () => { $(id + 'Value').textContent = slider.value; };
+    const shared = new URLSearchParams(location.search).get(id);
+    if (shared !== null && shared.trim() !== '' && Number.isFinite(Number(shared))) slider.value = shared;
+    show();
+    slider.addEventListener('input', () => { show(); requestRun(true); });
+  }
+
+  // ---------- Start ----------
+  let sharedCode = null;
+  try {
+    sharedCode = readSharedCode();
+  } catch (e) {
+    notice('The code in this link could not be read, so an example was loaded instead.', { error: true });
+  }
+  setCode(sharedCode !== null ? sharedCode : examples[0].code);
+  emptyMessage(emptyText);
+  const pref = getPref();
+  monacoWanted = pref ? pref === 'monaco' : !(matchMedia('(pointer: coarse)').matches || innerWidth < 700);
+  showEditor();
+  if (monacoWanted) loadMonaco();
+  startWorker();
+})();
 </script>
 </body>
 </html>

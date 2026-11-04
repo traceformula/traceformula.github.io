@@ -1,57 +1,213 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Mai Hoa Dịch Số – Thiệu Khang Tiết</title>
+<meta name="description" content="Công cụ Mai Hoa Dịch Số: đổi ngày giờ dương lịch sang âm lịch, tính Can Chi và lập quẻ chủ, quẻ biến theo hai phương án.">
+<link rel="icon" type="image/svg+xml" href="media/favicon.svg">
 <style>
-body { font-family: "Segoe UI", sans-serif; background:#fefefe; padding:20px; line-height:1.5; }
-label { display:block; margin:6px 0; }
-pre { background:#fff; border:1px solid #ccc; border-radius:8px; padding:12px; white-space:pre-wrap; }
-button { padding:8px 14px; cursor:pointer; margin-top:8px; border-radius:5px; background:#eee; }
+  :root { --bg:#0d0f14; --ink:#ece9e2; --muted:#a3a5ae; --line:rgba(255,255,255,.15); --card:rgba(20,22,29,.9); --accent:#ffc978; --accent-ink:#1d1508;
+          --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif; --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+          --han:"Songti TC","Songti SC","Noto Serif CJK TC","Noto Serif TC","PMingLiU","MingLiU",serif; color-scheme:dark; }
+  @media (prefers-color-scheme: light) { :root { --bg:#faf9f6; --ink:#1c1c1e; --muted:#5f5f66; --line:rgba(0,0,0,.16); --card:rgba(255,255,255,.93); --accent:#a84a24; --accent-ink:#fff; color-scheme:light; } }
+  * { box-sizing:border-box; }
+  html { -webkit-text-size-adjust:100%; }
+  body { margin:0; min-height:100vh; background:radial-gradient(70% 100% at 50% 0, color-mix(in srgb, var(--accent) 13%, transparent), transparent) no-repeat top / 100% 340px, var(--bg); color:var(--ink); font-family:var(--sans); line-height:1.55; -webkit-font-smoothing:antialiased; }
+  button,select,input { font:inherit; color:inherit; }
+  a { color:var(--accent); }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  .glass { background:var(--card); border:1px solid var(--line); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
+
+  .wrap { max-width:760px; margin:0 auto; padding:calc(env(safe-area-inset-top,0px) + 12px) max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 32px) max(16px,env(safe-area-inset-left,0px)); }
+  #home { display:inline-flex; align-items:center; min-height:36px; border-radius:999px; padding:6px 13px; font-size:.86rem; color:var(--ink); text-decoration:none; white-space:nowrap; }
+  #home:hover { border-color:var(--accent); }
+  header.intro { margin:26px 0 20px; }
+  h1 { display:flex; align-items:center; gap:10px; font-size:clamp(1.45rem,5vw,1.95rem); line-height:1.2; letter-spacing:-.01em; margin:0 0 6px; font-weight:650; }
+  h1 svg { flex:none; width:1.05em; height:1.05em; color:var(--accent); }
+  .lead { margin:0; color:var(--muted); max-width:60ch; }
+  h2 { font-size:.76rem; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); font-weight:600; margin:0 0 10px; }
+
+  .panel { border-radius:18px; padding:18px; margin-bottom:14px; }
+  .fields { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(0,1fr); gap:12px; }
+  .field { display:block; min-width:0; }
+  .field > span { display:block; font-size:.82rem; color:var(--muted); margin-bottom:4px; }
+  .full,.wide { grid-column:1 / -1; }
+  input[type=date],input[type=time],select { display:block; width:100%; min-width:0; min-height:42px; background:transparent; border:1px solid var(--line); border-radius:10px; padding:7px 10px; font-size:1rem; }
+  select option { background:var(--bg); color:var(--ink); }
+  input:hover:not(:disabled),select:hover:not(:disabled) { border-color:var(--accent); }
+  select:disabled { opacity:.55; cursor:not-allowed; }
+  .check { display:flex; align-items:center; gap:9px; min-height:36px; cursor:pointer; }
+  .check input { width:18px; height:18px; margin:0; flex:none; accent-color:var(--accent); }
+  .hint { margin:2px 0 0; font-size:.82rem; color:var(--muted); }
+  .actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
+  .btn { background:transparent; border:1px solid var(--line); border-radius:999px; padding:7px 18px; font-size:.95rem; cursor:pointer; white-space:nowrap; min-height:36px; }
+  .btn:hover { border-color:var(--accent); }
+  .btn.primary { background:var(--accent); border-color:var(--accent); color:var(--accent-ink); font-weight:600; }
+  .btn.primary:hover { filter:brightness(1.07); }
+  @media (pointer:coarse) { .btn,#home { min-height:42px; } .check { min-height:42px; } }
+  #msg { margin:12px 0 0; padding:8px 12px; border-left:3px solid var(--accent); border-radius:0 8px 8px 0; background:color-mix(in srgb, var(--accent) 10%, transparent); font-size:.92rem; }
+  #msg[hidden] { display:none; }
+
+  #result[hidden] { display:none; }
+  #result.stale { opacity:.55; }
+  .when { display:flex; flex-wrap:wrap; gap:6px 26px; margin:0 0 16px; }
+  .when div { min-width:0; }
+  .when dt { font-size:.78rem; color:var(--muted); }
+  .when dd { margin:0; font-weight:600; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+  .when .leap { color:var(--accent); font-weight:500; font-size:.86em; }
+  .pillars { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); border-top:1px solid var(--line); margin:0; }
+  .pillars div { padding:10px 4px 2px; text-align:center; border-left:1px solid var(--line); }
+  .pillars div:first-child { border-left:0; }
+  .pillars dt { font-size:.78rem; color:var(--muted); }
+  .pillars dd { margin:2px 0 0; font-weight:600; line-height:1.3; }
+  .pillars dd span { display:block; }
+
+  .hexes { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px; }
+  .hex { border-radius:18px; padding:16px 14px; margin:0; min-width:0; }
+  .hex h2 { margin-bottom:12px; }
+  .fig { display:flex; flex-direction:column; gap:7px; }
+  .yao { display:grid; grid-template-columns:1em minmax(0,1fr) 2.6em; align-items:center; gap:7px; }
+  .yao .no { font-size:.74rem; color:var(--muted); text-align:center; font-variant-numeric:tabular-nums; }
+  .yao .bar { display:flex; gap:18%; height:13px; }
+  .yao .bar i { display:block; flex:1; background:var(--ink); border-radius:2px; }
+  .yao .tag { font-size:.74rem; color:var(--accent); font-weight:600; white-space:nowrap; }
+  .yao.moving .bar i { background:var(--accent); }
+  .yao.moving .no { color:var(--accent); font-weight:700; }
+  .yao.moving { position:relative; }
+  .yao.moving::before { content:""; position:absolute; inset:-3px -6px; border-radius:7px; background:color-mix(in srgb, var(--accent) 14%, transparent); z-index:-1; }
+  .yao.turned .bar i { background:color-mix(in srgb, var(--accent) 62%, var(--ink)); }
+  .yao.turned .tag { color:var(--muted); font-weight:500; }
+  .hex .name { margin:14px 0 0; font-size:1.06rem; font-weight:650; line-height:1.3; }
+  .hex .han { margin:2px 0 0; font-family:var(--han); font-size:1.4rem; line-height:1.3; }
+  .hex .tri { margin:8px 0 0; font-size:.84rem; color:var(--muted); }
+  .moveline { margin:12px 2px 14px; font-size:.92rem; color:var(--muted); }
+  .moveline b { color:var(--accent); font-weight:600; }
+
+  details { border-radius:18px; padding:0 18px; margin:14px 0; }
+  summary { cursor:pointer; min-height:48px; display:flex; align-items:center; font-weight:600; list-style:none; gap:9px; border-radius:10px; }
+  summary::-webkit-details-marker { display:none; }
+  summary::before { content:"›"; color:var(--accent); font-size:1.3rem; line-height:1; width:.6em; text-align:center; transition:transform .15s; }
+  details[open] summary::before { transform:rotate(90deg); }
+  .explain { padding:2px 0 16px; font-size:.94rem; }
+  .explain h3 { font-size:.98rem; margin:12px 0 6px; font-weight:600; }
+  .explain ul { list-style:none; margin:0 0 8px; padding:0 0 0 12px; border-left:2px solid var(--accent); }
+  .explain li { padding:1px 0; font-variant-numeric:tabular-nums; }
+  .explain p { margin:0 0 8px; }
+  .note { margin:16px 2px 0; font-size:.84rem; color:var(--muted); }
+  .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+
+  @media (min-width:600px) {
+    .fields { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+    .wide { grid-column:auto; }
+    .hexes { grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); align-items:center; }
+    .hex { padding:18px; }
+    .fig { gap:9px; }
+    .yao .bar { height:15px; }
+    .arrow { display:block !important; }
+  }
+  .arrow { display:none; color:var(--accent); font-size:1.4rem; }
+  @media (prefers-reduced-motion:reduce) { summary::before { transition:none; } }
 </style>
+</head>
+<body>
+<div class="wrap">
+  <a id="home" class="glass" href="./">← Home</a>
+
+  <header class="intro">
+    <h1>
+      <svg viewBox="-12 -12 24 24" aria-hidden="true"><g fill="currentColor"><circle cy="-6.6" r="4.6"/><circle cy="-6.6" r="4.6" transform="rotate(72)"/><circle cy="-6.6" r="4.6" transform="rotate(144)"/><circle cy="-6.6" r="4.6" transform="rotate(216)"/><circle cy="-6.6" r="4.6" transform="rotate(288)"/></g><circle r="2.5" fill="var(--bg)"/></svg>
+      Mai Hoa Dịch Số – Thiệu Khang Tiết
+    </h1>
+    <p class="lead">Đổi ngày giờ dương lịch sang âm lịch, tính Can Chi và lập quẻ theo hai phương án.</p>
+  </header>
+
+  <form id="form" class="panel glass" novalidate>
+    <div class="fields">
+      <label class="field"><span>Ngày dương</span><input type="date" id="solarDate"></label>
+      <label class="field"><span>Giờ (hh:mm)</span><input type="time" id="solarTime"></label>
+      <label class="field wide"><span>Phương án</span>
+        <select id="variant">
+          <option value="B" selected>Phương án B (Thiệu Khang Tiết)</option>
+          <option value="A">Phương án A (thông thường)</option>
+        </select>
+      </label>
+      <label class="field wide"><span>Múi giờ</span>
+        <select id="iana">
+          <option value="Asia/Ho_Chi_Minh">Asia/Ho_Chi_Minh (VN)</option>
+          <option value="America/New_York">America/New_York</option>
+        </select>
+      </label>
+      <div class="full">
+        <label class="check"><input type="checkbox" id="vnStd" checked> Dùng chuẩn VN (UTC+7)</label>
+        <p class="hint" id="clockHint"></p>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="cast" type="submit">Lập quẻ</button>
+      <button class="btn" id="now" type="button">Bây giờ</button>
+    </div>
+    <p id="msg" role="status" hidden></p>
+  </form>
+
+  <section id="result" aria-label="Kết quả" aria-live="polite" hidden>
+    <div class="panel glass">
+      <dl class="when">
+        <div><dt>Ngày dương</dt><dd id="rSolar"></dd></div>
+        <div><dt>Âm lịch</dt><dd><span id="rLunar"></span> <span id="rLeap" class="leap"></span></dd></div>
+        <div><dt>Múi giờ</dt><dd id="rTz"></dd></div>
+      </dl>
+      <dl class="pillars" aria-label="Can Chi">
+        <div><dt>Giờ</dt><dd id="pHour"></dd></div>
+        <div><dt>Ngày</dt><dd id="pDay"></dd></div>
+        <div><dt>Tháng</dt><dd id="pMonth"></dd></div>
+        <div><dt>Năm</dt><dd id="pYear"></dd></div>
+      </dl>
+    </div>
+    <div class="hexes">
+      <figure class="hex glass" id="hexMain">
+        <h2>Quẻ chủ</h2>
+        <div class="fig" role="img"></div>
+        <figcaption><p class="name"></p><p class="han" lang="zh-Hant"></p><p class="tri"></p></figcaption>
+      </figure>
+      <span class="arrow" aria-hidden="true">→</span>
+      <figure class="hex glass" id="hexChanged">
+        <h2>Quẻ biến</h2>
+        <div class="fig" role="img"></div>
+        <figcaption><p class="name"></p><p class="han" lang="zh-Hant"></p><p class="tri"></p></figcaption>
+      </figure>
+    </div>
+    <p class="moveline" id="moveLine"></p>
+  </section>
+
+  <details class="glass">
+    <summary>Giải thích hai phương án</summary>
+    <div class="explain">
+      <h3>Phương án A (phổ thông)</h3>
+      <ul>
+        <li>Thượng quái = (tháng + ngày) mod 8</li>
+        <li>Hạ quái = (ngày + giờ) mod 8</li>
+        <li>Hào động = (tháng + ngày + giờ) mod 6</li>
+      </ul>
+      <p>Dễ hiểu, phổ biến trong các sách Dịch học hiện đại.</p>
+      <h3>Phương án B (Thiệu Khang Tiết – Mai Hoa chuẩn)</h3>
+      <ul>
+        <li>Thượng quái = (tháng + giờ) mod 8</li>
+        <li>Hạ quái = (ngày + tháng) mod 8</li>
+        <li>Hào động = (tháng + ngày + giờ) mod 6</li>
+      </ul>
+      <p>Nhấn mạnh “thiên – nhân – địa” phối hợp (thiên thời là tháng, nhân là ngày, địa là giờ). Dùng cho Mai Hoa Dịch Số nguyên bản của Thiệu Khang Tiết (Bắc Tống).</p>
+      <p><i>Phương án B</i> thường cho kết quả “thuần dịch lý” và tương thích với bản đồ quẻ trong Thiệu tiên sinh, còn <i>phương án A</i> dùng thuận tiện hơn trong các hệ giản hóa hiện đại.</p>
+    </div>
+  </details>
+
+  <p class="note">Mai Hoa Dịch Số là một phép xem truyền thống. Trang này giới thiệu với tinh thần tìm hiểu văn hóa, không phải lời khuyên.</p>
+</div>
+
 <script>
 // ================= Âm Lịch =================
 var AmLich={INT:Math.floor,jdFromDate:function(d,m,y){var a=this.INT((14-m)/12);var yy=y+4800-a;var mm=m+12*a-3;var jd=d+this.INT((153*mm+2)/5)+365*yy+this.INT(yy/4)-this.INT(yy/100)+this.INT(yy/400)-32045;if(jd<2299161)jd=d+this.INT((153*mm+2)/5)+365*yy+this.INT(yy/4)-32083;return jd},NewMoon:function(k){var T=k/1236.85,T2=T*T,T3=T2*T,dr=Math.PI/180;var Jd1=2415020.75933+29.53058868*k+0.0001178*T2-0.000000155*T3;Jd1+=0.00033*Math.sin((166.56+132.87*T-0.009173*T2)*dr);var M=359.2242+29.10535608*k-0.0000333*T2-0.00000347*T3;var Mpr=306.0253+385.81691806*k+0.0107306*T2+0.00001236*T3;var F=21.2964+390.67050646*k-0.0016528*T2-0.00000239*T3;var C1=(0.1734-0.000393*T)*Math.sin(M*dr)+0.0021*Math.sin(2*M*dr)-0.4068*Math.sin(Mpr*dr)+0.0161*Math.sin(2*Mpr*dr)+0.0104*Math.sin(2*F*dr)-0.0051*Math.sin((M+Mpr)*dr);var deltat=T<-11?0.001+0.000839*T+0.0002261*T2-0.00000845*T3-0.000000081*T*T3:-0.000278+0.000265*T+0.000262*T2;return Jd1+C1-deltat},getNewMoonDay:function(k,tz){return Math.floor(this.NewMoon(k)+0.5+tz/24)},getSunLongitude:function(jdn,tz){var T=(jdn-2451545.0)/36525;var dr=Math.PI/180;var M=357.52910+35999.05030*T-0.0001559*T*T-0.00000048*T*T*T;var L0=280.46645+36000.76983*T+0.0003032*T*T;var DL=(1.914600-0.004817*T-0.000014*T*T)*Math.sin(dr*M)+(0.019993-0.000101*T)*Math.sin(2*dr*M)+0.000290*Math.sin(3*dr*M);var L=L0+DL;L=L*dr;L=L-2*Math.PI*Math.floor(L/(2*Math.PI));return Math.floor(L/Math.PI*6)},getLunarMonth11:function(yy,tz){var off=this.jdFromDate(31,12,yy)-2415021;var k=Math.floor(off/29.530588853);var nm=this.getNewMoonDay(k,tz);if(this.getSunLongitude(nm,tz)>=9)nm=this.getNewMoonDay(k-1,tz);return nm},getLeapMonthOffset:function(a11,tz){var k=Math.floor((a11-2415021.076998695)/29.530588853+0.5);var last,arc=this.getSunLongitude(this.getNewMoonDay(k+1,tz),tz);var i=1;do{last=arc;i++;arc=this.getSunLongitude(this.getNewMoonDay(k+i,tz),tz);}while(arc!=last&&i<14);return i-1},convertSolar2Lunar:function(dd,mm,yy,tz){var dayNumber=this.jdFromDate(dd,mm,yy);var k=Math.floor((dayNumber-2415021.076998695)/29.530588853);var monthStart=this.getNewMoonDay(k+1,tz);if(monthStart>dayNumber)monthStart=this.getNewMoonDay(k,tz);var a11=this.getLunarMonth11(yy,tz);var b11=a11,lunarYear;if(a11>=monthStart){a11=this.getLunarMonth11(yy-1,tz);lunarYear=yy;}else{b11=this.getLunarMonth11(yy+1,tz);lunarYear=yy+1;}var lunarDay=dayNumber-monthStart+1;var diff=Math.floor((monthStart-a11)/29);var lunarLeap=0,lunarMonth=diff+11;if(b11-a11>365){var leapMonthDiff=this.getLeapMonthOffset(a11,tz);if(diff>=leapMonthDiff){lunarMonth=diff+10;if(diff==leapMonthDiff)lunarLeap=1;}}if(lunarMonth>12)lunarMonth-=12;if(lunarMonth>=11&&diff<4)lunarYear-=1;return[lunarDay,lunarMonth,lunarYear,lunarLeap];}};
-</script>
-</head>
-<body>
-<h2>🌸 Mai Hoa Dịch Số – Thiệu Khang Tiết</h2>
-<label>Ngày dương: <input type="date" id="solarDate"></label>
-<label>Giờ (hh:mm): <input type="time" id="solarTime" value="01:46"></label>
-<label>Múi giờ:
-  <select id="iana">
-    <option value="Asia/Ho_Chi_Minh">Asia/Ho_Chi_Minh (VN)</option>
-    <option value="America/New_York">America/New_York</option>
-  </select>
-</label>
-<label><input type="checkbox" id="vnStd" checked> Dùng chuẩn VN (UTC+7)</label>
-<label>Phương án:
-  <select id="variant">
-    <option value="B" selected>Phương án B (Thiệu Khang Tiết)</option>
-    <option value="A">Phương án A (thông thường)</option>
-  </select>
-</label>
-<div id="explain" style="font-size:14px; background:#f8f8f8; border-left:4px solid #999; padding:8px 12px; margin:8px 0; line-height:1.5;">
-  <b>🧭 Giải thích:</b><br>
-  • <b>Phương án A (phổ thông)</b>:<br>
-  &nbsp;&nbsp;– Thượng quái = (tháng + ngày) mod 8<br>
-  &nbsp;&nbsp;– Hạ quái = (ngày + giờ) mod 8<br>
-  &nbsp;&nbsp;– Hào động = (tháng + ngày + giờ) mod 6<br>
-  👉 Dễ hiểu, phổ biến trong các sách Dịch học hiện đại.<br><br>
 
-  • <b>Phương án B (Thiệu Khang Tiết – Mai Hoa chuẩn)</b>:<br>
-  &nbsp;&nbsp;– Thượng quái = (tháng + giờ) mod 8<br>
-  &nbsp;&nbsp;– Hạ quái = (ngày + tháng) mod 8<br>
-  &nbsp;&nbsp;– Hào động = (tháng + ngày + giờ) mod 6<br>
-  👉 Nhấn mạnh “thiên – nhân – địa” phối hợp (thiên thời là tháng, nhân là ngày, địa là giờ).<br>
-  Dùng cho Mai Hoa Dịch Số nguyên bản của Thiệu Khang Tiết (Bắc Tống).<br><br>
-  💡 <i>Phương án B</i> thường cho kết quả “thuần dịch lý” và tương thích với bản đồ quẻ trong Thiệu tiên sinh,  
-  còn <i>phương án A</i> dùng thuận tiện hơn trong các hệ giản hóa hiện đại.
-</div>
-<button onclick="calc()">Lập quẻ</button>
-<pre id="out"></pre>
-
-<script>
 const CAN=["Giáp","Ất","Bính","Đinh","Mậu","Kỷ","Canh","Tân","Nhâm","Quý"];
 const CHI=["Tý","Sửu","Dần","Mão","Thìn","Tỵ","Ngọ","Mùi","Thân","Dậu","Tuất","Hợi"];
 const mod1=(x,m)=>{const r=x%m;return r===0?m:r;}
@@ -67,19 +223,6 @@ function chiIndexFromHour(h){if(h===23||h===0)return 1;if(h<=2)return 2;if(h<=4)
 function offsetHoursAt(iana,y,m,d,hh,mm){const dtUTC=new Date(Date.UTC(y,m-1,d,hh,mm));const fmt=new Intl.DateTimeFormat("en-US",{timeZone:iana,timeZoneName:"shortOffset"});const s=fmt.format(dtUTC);const m1=s.match(/GMT([+-]\d{2})(?::?(\d{2}))?/);if(!m1)return 0;const h=parseInt(m1[1]);const mi=m1[2]?parseInt(m1[2]):0;return h+(h>=0?mi/60:-mi/60);}
 const build=(l,u)=>[...TRIGRAMS[l].lines,...TRIGRAMS[u].lines];
 const mutate=(arr,i)=>{const o=[...arr];o[i-1]=o[i-1]?0:1;return o;}
-const render=(lines,m)=>{const s=v=>v?"───────":"── ──";let t="";for(let i=6;i>=1;i--){t+=i+" | "+s(lines[i-1]);if(i===m)t+=" ⇢ động";t+="\n";}return t;}
-/*
-function render(lines, moving) {
-  const s = v => v ? "───────" : "── ──";
-  let t = "";
-  // Vẽ từ hào 1 (dưới) lên hào 6 (trên)
-  for (let i = 1; i <= 6; i++) {
-    t += i + " | " + s(lines[i - 1]);
-    if (i === moving) t += " ⇢ động";
-    t += "\n";
-  }
-  return t;
-} */
 
 function trigramIndex(bits){for(let i=1;i<=8;i++){const t=TRIGRAMS[i].lines;if(t[0]===bits[0]&&t[1]===bits[1]&&t[2]===bits[2])return i;}return 1;}
 
@@ -128,20 +271,15 @@ function getHexIndices(dayAm,monthAm,hourChi,variant){
   return {upper:up,lower:lo,moving};
 }
 
-function calc(){
-  const solar=document.getElementById("solarDate").value;
-  const time=document.getElementById("solarTime").value;
-  if(!solar){alert("Chọn ngày!");return;}
+
+// Phép tính giữ nguyên như trang cũ; chỉ tách phần hiển thị ra khỏi phần tính.
+function compute(solar,time,iana,useVN,variant){
   const [y,m,d]=solar.split("-").map(Number);
   const [hh,mm]=time.split(":").map(Number);
-  const iana=document.getElementById("iana").value;
-  const useVN=document.getElementById("vnStd").checked;
   const tz=useVN?7:offsetHoursAt(iana,y,m,d,hh,mm);
-  const variant=document.getElementById("variant").value;
 
-  const [dayAm,monthAm,yearAm]=AmLich.convertSolar2Lunar(d,m,y,tz);
+  const [dayAm,monthAm,yearAm,leap]=AmLich.convertSolar2Lunar(d,m,y,tz);
   const chiHour=chiIndexFromHour(hh);
-  console.log(`Hour: ${chiHour}`);
   const {dayCan,dayChi,dayCanIndex}=dayCanChi(d,m,y);
   const {yearCan,yearChi,yearCanIndex}=yearCanChi(yearAm);
   const {monthCan,monthChi}=monthCanChi(monthAm,yearCanIndex);
@@ -165,17 +303,113 @@ function calc(){
   const changedHex = HEX_NAMES[idx2];
 
   if (upperFromLines !== upper || lowerFromLines !== lower) {
-    console.warn("⚠️ Mismatch mapping:",
+    console.warn("Mismatch mapping:",
       {calcUpper: upper, calcLower: lower, fromLinesUpper: upperFromLines, fromLinesLower: lowerFromLines}
     );
   }
 
-  let out=`Ngày dương: ${d}/${m}/${y} ${String(hh).padStart(2,"0")}:${String(mm).padStart(2,"0")}\nÂm lịch: ${dayAm}/${monthAm}/${yearAm}\nMúi giờ: ${useVN?"VN (UTC+7)":iana}\n\n`;
-  out+=`🕓 Can Chi:\n  Giờ: ${hourCan} ${hourChi}\n  Ngày: ${dayCan} ${dayChi}\n  Tháng: ${monthCan} ${monthChi}\n  Năm: ${yearCan} ${yearChi}\n\n`;
-  out+=`🔹 Quẻ chủ: ${main[0]} (${main[1]})\n${render(lines,moving)}✨ ${main[2]}\n\n`;
-  out+=`🔸 Quẻ biến: ${changedHex[0]} (${changedHex[1]})\n${render(changed,0)}✨ ${changedHex[2]}`;
-  document.getElementById("out").textContent=out;
+  return {d,m,y,hh,mm,dayAm,monthAm,yearAm,leap,useVN,iana,
+    hour:[hourCan,hourChi],day:[dayCan,dayChi],month:[monthCan,monthChi],year:[yearCan,yearChi],
+    lines,changed,moving,main,changedHex,
+    tri1:[upperFromLines,lowerFromLines],tri2:[upper2FromLines,lower2FromLines]};
 }
+
+// ================= Hiển thị =================
+const $=id=>document.getElementById(id);
+const pad2=n=>String(n).padStart(2,"0");
+const reduced=matchMedia("(prefers-reduced-motion: reduce)");
+
+function showMsg(text){$("msg").textContent=text||"";$("msg").hidden=!text;}
+
+function setPillar(id,[can,chi]){
+  const dd=$(id);dd.textContent="";
+  const a=document.createElement("span"),b=document.createElement("span");
+  a.textContent=can+" ";b.textContent=chi;
+  dd.append(a,b);
+}
+
+// Vẽ quẻ từ hào 6 (trên) xuống hào 1 (dưới). mark: "moving" ở quẻ chủ, "turned" ở quẻ biến.
+function drawHex(box,lines,lineNo,mark,hex,tri){
+  const fig=box.querySelector(".fig");fig.textContent="";
+  for(let i=6;i>=1;i--){
+    const row=document.createElement("div");row.className="yao";
+    row.dataset.n=i;row.dataset.v=lines[i-1];
+    const no=document.createElement("span");no.className="no";no.textContent=i;no.setAttribute("aria-hidden","true");
+    const bar=document.createElement("span");bar.className="bar";bar.setAttribute("aria-hidden","true");
+    for(let k=0;k<(lines[i-1]?1:2);k++)bar.append(document.createElement("i"));
+    const tag=document.createElement("span");tag.className="tag";tag.setAttribute("aria-hidden","true");
+    if(i===lineNo){row.classList.add(mark);tag.textContent=mark==="moving"?"động":"đổi";}
+    row.append(no,bar,tag);fig.append(row);
+  }
+  const say=[];
+  for(let i=6;i>=1;i--)say.push(`hào ${i} ${lines[i-1]?"dương":"âm"}${i===lineNo&&mark==="moving"?" (động)":""}`);
+  fig.setAttribute("aria-label",`${hex[0]}: ${say.join(", ")}`);
+  box.querySelector(".name").textContent=hex[0];
+  box.querySelector(".han").textContent=hex[1];
+  box.querySelector(".tri").textContent=`Thượng ${TRIGRAMS[tri[0]].vn}, hạ ${TRIGRAMS[tri[1]].vn}`;
+}
+
+function show(r){
+  const clock=`${pad2(r.hh)}:${r.mm===undefined?"--":pad2(r.mm)}`;
+  $("rSolar").textContent=`${r.d}/${r.m}/${r.y} ${clock}`;
+  $("rLunar").textContent=`${r.dayAm}/${r.monthAm}/${r.yearAm}`;
+  $("rLeap").textContent=r.leap?"(tháng nhuận)":"";
+  $("rTz").textContent=r.useVN?"VN (UTC+7)":r.iana;
+  setPillar("pHour",r.hour);setPillar("pDay",r.day);setPillar("pMonth",r.month);setPillar("pYear",r.year);
+  drawHex($("hexMain"),r.lines,r.moving,"moving",r.main,r.tri1);
+  drawHex($("hexChanged"),r.changed,r.moving,"turned",r.changedHex,r.tri2);
+  const was=r.lines[r.moving-1]?"dương":"âm",now=r.changed[r.moving-1]?"dương":"âm";
+  const line=$("moveLine");line.textContent="Hào động: ";
+  const b=document.createElement("b");b.textContent=`hào ${r.moving}`;
+  line.append(b,` (${was} đổi thành ${now}).`);
+  $("result").hidden=false;$("result").classList.remove("stale");
+}
+
+function calc(){
+  const solar=$("solarDate").value,time=$("solarTime").value;
+  const stale=()=>$("result").classList.add("stale");
+  if(!solar){showMsg("Chọn ngày!");stale();return false;}
+  let r;
+  try{r=compute(solar,time,$("iana").value,$("vnStd").checked,$("variant").value);}
+  catch(e){
+    showMsg(time?"Không tính được với ngày giờ này.":"Chọn giờ để tính theo múi giờ này.");
+    stale();return false;
+  }
+  show(r);
+  showMsg(time?"":"Chưa chọn giờ nên đang tính như 00 giờ (giờ Tý).");
+  return true;
+}
+
+// Trả về ngày giờ hiện tại theo một múi giờ, hoặc theo đồng hồ của máy nếu không nêu múi giờ.
+function nowIn(zone){
+  const opt={year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"};
+  if(zone)opt.timeZone=zone;
+  const p={};
+  for(const {type,value} of new Intl.DateTimeFormat("en-US",opt).formatToParts(new Date()))p[type]=value;
+  return {date:`${p.year}-${p.month}-${p.day}`,time:`${p.hour}:${p.minute}`};
+}
+function setNow(){
+  const n=nowIn($("vnStd").checked?null:$("iana").value);
+  $("solarDate").value=n.date;$("solarTime").value=n.time;
+}
+function syncZone(){
+  const vn=$("vnStd").checked;
+  $("iana").disabled=vn;
+  $("clockHint").textContent=vn?"Đang dùng UTC+7 nên không xét mục Múi giờ. “Bây giờ” lấy theo đồng hồ của máy.":`“Bây giờ” lấy theo giờ ${$("iana").value}.`;
+}
+
+$("form").addEventListener("submit",e=>{
+  e.preventDefault();
+  if(calc()){
+    const top=$("result").getBoundingClientRect().top;
+    if(top>innerHeight*.6)$("result").scrollIntoView({behavior:reduced.matches?"auto":"smooth",block:"start"});
+  }
+});
+$("now").addEventListener("click",()=>{setNow();calc();});
+for(const id of ["solarDate","solarTime","iana","vnStd","variant"])
+  $(id).addEventListener("change",()=>{syncZone();if($("solarDate").value&&$("solarTime").value)calc();});
+
+syncZone();setNow();calc();
 </script>
 </body>
 </html>

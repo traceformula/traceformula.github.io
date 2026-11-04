@@ -1,42 +1,286 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Browser Fingerprinting Demo</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Browser Fingerprinting Demo</title>
+<meta name="description" content="See what your browser reveals to any website without asking: audio, canvas, WebGL, fonts and more. Runs only in your browser. Nothing is sent or stored.">
+<link rel="icon" type="image/svg+xml" href="media/favicon.svg">
+<style>
+  :root { --bg:#0d0f14; --ink:#ece9e2; --muted:#a3a5ae; --line:rgba(255,255,255,.15); --card:rgba(20,22,29,.9); --accent:#ffc978; --accent-ink:#1d1508;
+          --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif; --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace; }
+  @media (prefers-color-scheme: light) { :root { --bg:#faf9f6; --ink:#1c1c1e; --muted:#5f5f66; --line:rgba(0,0,0,.16); --card:rgba(255,255,255,.93); --accent:#a84a24; --accent-ink:#fff; } }
+  * { box-sizing:border-box; }
+  html { -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--sans); line-height:1.55; -webkit-font-smoothing:antialiased; }
+  button,textarea { font:inherit; color:inherit; }
+  a { color:var(--accent); }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  .glass { background:var(--card); border:1px solid var(--line); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
+  .btn { display:inline-flex; align-items:center; justify-content:center; background:transparent; border:1px solid var(--line); border-radius:999px; padding:7px 16px; font-size:.9rem; cursor:pointer; min-height:36px; color:var(--ink); text-decoration:none; }
+  .btn:hover:not(:disabled) { border-color:var(--accent); }
+  .btn:disabled, .btn[aria-disabled="true"] { opacity:.55; cursor:default; }
+  .btn.primary { background:var(--accent); border-color:var(--accent); color:var(--accent-ink); font-weight:600; }
+  @media (pointer:coarse) { .btn { min-height:42px; } }
+
+  #wrap { max-width:1020px; margin:0 auto; padding:calc(env(safe-area-inset-top,0px) + 12px) 16px calc(env(safe-area-inset-bottom,0px) + 40px); }
+  #home { display:inline-flex; align-items:center; min-height:36px; border-radius:999px; padding:7px 13px; font-size:.86rem; color:var(--ink); text-decoration:none; }
+  @media (pointer:coarse) { #home { min-height:42px; } }
+  h1 { font-size:clamp(1.8rem,5vw,2.7rem); line-height:1.12; letter-spacing:-.02em; margin:28px 0 10px; max-width:20em; }
+  .lede { font-size:1.08rem; color:var(--muted); margin:0 0 20px; max-width:42em; }
+  h2 { font-size:1.2rem; letter-spacing:-.01em; margin:40px 0 12px; }
+  p { margin:0 0 10px; }
+  .panel { border-radius:16px; padding:16px 18px; }
+  .panel > :last-child { margin-bottom:0; }
+  #privacy b { display:block; font-size:1.02rem; margin-bottom:4px; }
+  #privacy p { font-size:.92rem; }
+  #privacy .sub { color:var(--muted); }
+  code { font-family:var(--mono); font-size:.88em; }
+
+  #actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:18px 0 8px; }
+  #status, #copyStatus { font-size:.9rem; color:var(--muted); margin:0; min-height:1.55em; }
+  #copyFallback { display:block; width:100%; height:150px; margin:8px 0; background:transparent; border:1px solid var(--line); border-radius:10px; padding:8px 10px; font-family:var(--mono); font-size:.78rem; }
+  #copyFallback[hidden] { display:none; }
+
+  #combined { margin-top:12px; border-color:var(--accent); }
+  .label { font-size:.76rem; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); font-weight:600; }
+  .hash { font-family:var(--mono); font-size:.82rem; overflow-wrap:anywhere; }
+  #combined-fp { display:block; font-size:clamp(.86rem,2.2vw,1.04rem); margin:4px 0 8px; }
+  #combined p:last-child { font-size:.88rem; color:var(--muted); }
+
+  #signals { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+  @media (max-width:720px) { #signals { grid-template-columns:minmax(0,1fr); } }
+  .sig { display:flex; flex-direction:column; gap:8px; }
+  .sig header { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .sig h3 { margin:0; font-size:1rem; }
+  .pill { flex:none; font-size:.74rem; border:1px solid var(--line); border-radius:999px; padding:2px 9px; color:var(--muted); white-space:nowrap; }
+  .pill.ok { color:var(--ink); }
+  .pill.unavailable, .pill.blocked, .pill.randomized { color:var(--accent-ink); background:var(--accent); border-color:var(--accent); font-weight:600; }
+  .val { font-family:var(--mono); font-size:.84rem; overflow-wrap:anywhere; background:rgba(127,127,127,.1); border-radius:10px; padding:8px 10px; }
+  .val.empty { color:var(--muted); }
+  .note { font-size:.86rem; border-left:2px solid var(--accent); padding-left:10px; margin:0; }
+  .sig dl { margin:0; font-size:.88rem; }
+  .sig dt { color:var(--muted); font-size:.76rem; letter-spacing:.06em; text-transform:uppercase; font-weight:600; margin-top:6px; }
+  .sig dd { margin:0; }
+  .sig dd.hash { font-size:.76rem; }
+  .sig canvas { display:block; max-width:100%; border-radius:6px; }
+
+  ul.facts { list-style:none; margin:0; padding:0; }
+  ul.facts li { padding:2px 0 2px 12px; border-left:2px solid var(--accent); margin-bottom:12px; font-size:.95rem; }
+  ul.facts li:last-child { margin-bottom:0; }
+  .two { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+  @media (max-width:720px) { .two { grid-template-columns:minmax(0,1fr); } }
+  .two h3 { margin:0 0 8px; font-size:1rem; }
+  .two p { font-size:.93rem; }
+  footer { margin-top:32px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  @media (prefers-reduced-motion:no-preference) { .btn { transition:border-color .15s; } }
+</style>
 </head>
 <body>
-  <h1>Fingerprint Test</h1>
-  <button onclick="runFingerprint()">Get Fingerprints</button>
+<div id="wrap">
+  <a id="home" class="glass" href="./">← Home</a>
 
-  <h2>Results</h2>
-  <p><strong>Audio Fingerprint:</strong> <span id="audio-fp">N/A</span></p>
-  <p><strong>Canvas Fingerprint:</strong> <span id="canvas-fp">N/A</span></p>
-  <p><strong>Combined:</strong> <span id="combined-fp">N/A</span></p>
+  <main>
+    <h1>What your browser reveals to any website, without asking</h1>
+    <p class="lede">This is browser fingerprinting. A page reads ordinary details about your device, then hashes them into a value that often stays the same even after you clear your cookies.</p>
 
-  <script type="module">
-    import {
-      getAudioFingerprint,
-      getCanvasFingerprint,
-      getCombinedFingerprint
-    } from './fingerprint.js';
+    <section id="privacy" class="glass panel" aria-label="Privacy">
+      <b>Everything runs in your browser. Nothing is sent or stored.</b>
+      <p>Nothing is read until you press the button. This page does not send the results anywhere, sets no cookies and uses no browser storage. Run it twice and the only memory of the first run is in this open tab.</p>
+      <p class="sub">To check, open your browser’s network panel and press the button: no request appears. The page’s Content-Security-Policy also sets <code>connect-src 'none'</code>, so the browser itself refuses fetch, beacon and WebSocket connections from it. Loading any web page is still a request to its host, so GitHub Pages receives your IP address and User-Agent as usual. Those are not part of the results below.</p>
+    </section>
 
-    window.runFingerprint = async function () {
-      document.getElementById('audio-fp').textContent = 'Calculating...';
-      document.getElementById('canvas-fp').textContent = 'Calculating...';
-      document.getElementById('combined-fp').textContent = 'Calculating...';
+    <div id="actions">
+      <button class="btn primary" id="run" type="button">Show what my browser reveals</button>
+      <button class="btn" id="copy" type="button" disabled>Copy results</button>
+    </div>
+    <p id="status" role="status"></p>
+    <p id="copyStatus" role="status"></p>
+    <textarea id="copyFallback" readonly hidden aria-label="Results as text, for copying by hand"></textarea>
 
-      try {
-        const { audio, canvas, combined } = await getCombinedFingerprint();
-        document.getElementById('audio-fp').textContent = audio;
-        document.getElementById('canvas-fp').textContent = canvas;
-        document.getElementById('combined-fp').textContent = combined;
-      } catch (err) {
-        document.getElementById('audio-fp').textContent = 'Error';
-        document.getElementById('canvas-fp').textContent = 'Error';
-        document.getElementById('combined-fp').textContent = 'Error';
-        console.error(err);
+    <section id="combined" class="glass panel" aria-labelledby="combinedLabel">
+      <span class="label" id="combinedLabel">Combined hash</span>
+      <span class="hash" id="combined-fp">Not read yet</span>
+      <p>SHA-256 of every signal below taken together. Change one signal and the whole hash changes.</p>
+    </section>
+
+    <h2>The signals</h2>
+    <div id="signals"><noscript><p>This demo needs JavaScript. With it turned off, none of these signals can be read by a page.</p></noscript></div>
+
+    <h2>How to read this</h2>
+    <div class="two">
+      <section class="glass panel">
+        <h3>What this page cannot tell you</h3>
+        <p><strong>It cannot tell you how unique you are.</strong> That would take comparing your values with a large population of other browsers. This page has no such data and keeps none, so it shows no uniqueness score or percentage.</p>
+        <p>A hash alone says nothing about rarity. Two identical laptops can produce the same one, and your own can change after a browser update, a new monitor, a new font or a trip abroad.</p>
+        <p>Projects such as <a href="https://coveryourtracks.eff.org/" rel="noopener noreferrer">Cover Your Tracks</a> and <a href="https://amiunique.org/" rel="noopener noreferrer">AmIUnique</a> do compare, because they collect results from their visitors. Read their terms before you run them.</p>
+      </section>
+      <section class="glass panel">
+        <h3>What each label means</h3>
+        <p><strong>Read:</strong> the browser returned a value. It may not be the true one, since browsers can report a substitute.</p>
+        <p><strong>Not available:</strong> the feature is missing or turned off here.</p>
+        <p><strong>Blocked:</strong> the feature ran, but what came back was empty or not what was drawn.</p>
+        <p><strong>Randomized:</strong> repeated reads differ, or a solid colour area came back changed.</p>
+        <p>This page only spots noise that changes between reads. Noise that stays fixed for a session, as Brave’s does, shows as Read and still gives a different value on other sites.</p>
+      </section>
+    </div>
+
+    <h2>What reduces fingerprinting</h2>
+    <section class="glass panel">
+      <ul class="facts">
+        <li><strong>Tor Browser</strong> tries to make all its users look the same, with standard window sizes, a UTC time zone and limited canvas reads. It works best unmodified, because added extensions and changed settings can set you apart.</li>
+        <li><strong>Firefox</strong> has <code>privacy.resistFingerprinting</code> in <code>about:config</code>, which applies protections that came from Tor Browser, including reporting UTC. Mozilla warns that it can break sites. Enhanced Tracking Protection separately blocks scripts on a list of known fingerprinters, which is a milder step.</li>
+        <li><strong>Brave</strong> adds small random changes to canvas, WebGL and audio results. They stay fixed for each site during a session, so sites get different values from each other and new ones after a restart.</li>
+        <li><strong>Safari</strong> 17 and later turns on advanced fingerprinting protection in Private Browsing, and it can be set for all browsing.</li>
+        <li><strong>What does not help much:</strong> clearing cookies and private windows leave most of these signals as they were, and a VPN changes your IP address but not these values. No setting removes fingerprinting completely.</li>
+      </ul>
+    </section>
+
+    <footer>
+      <a class="btn" href="debug_fingerprint.html">Raw detail on the debug page</a>
+    </footer>
+  </main>
+</div>
+
+<script type="module">
+  const $ = id => document.getElementById(id);
+  const status = $('status');
+
+  function el(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  let fp;
+  try {
+    fp = await import('./fingerprint.js');
+  } catch {
+    status.textContent = 'The demo script could not load, so nothing can be read. Reload the page to try again.';
+    $('run').disabled = true;
+  }
+
+  if (fp) {
+    const { SIGNALS, readSignal, combineResults, copyText } = fp;
+    const LABELS = { ok: 'Read', unavailable: 'Not available', blocked: 'Blocked', randomized: 'Randomized', pending: 'Not read yet', busy: 'Reading' };
+    const cards = {};
+    let report = '';
+    let previous = null; // Last run, in memory only.
+
+    for (const signal of SIGNALS) {
+      const card = el('article', 'sig glass panel');
+      card.id = `sig-${signal.id}`;
+      const head = el('header');
+      const pill = el('span', 'pill', LABELS.pending);
+      head.append(el('h3', '', signal.name), pill);
+      const value = el('div', 'val empty', 'Not read yet');
+      const note = el('p', 'note');
+      note.hidden = true;
+      const preview = el('div');
+      preview.hidden = true;
+      const list = el('dl');
+      list.append(el('dt', '', 'What it is'), el('dd', '', signal.what), el('dt', '', 'Why it differs'), el('dd', '', signal.why));
+      const hashTerm = el('dt', '', 'SHA-256');
+      const hash = el('dd', 'hash', 'Not read yet');
+      // Same ids as the original page for the two named results.
+      if (signal.id === 'audio') hash.id = 'audio-fp';
+      if (signal.id === 'canvas') hash.id = 'canvas-fp';
+      list.append(hashTerm, hash);
+      card.append(head, value, note, preview, list);
+      $('signals').append(card);
+      cards[signal.id] = { pill, value, note, preview, hash };
+    }
+
+    function setPill(pill, state) {
+      pill.textContent = LABELS[state];
+      pill.className = `pill ${state}`;
+    }
+
+    function showResult(signal, result) {
+      const c = cards[signal.id];
+      setPill(c.pill, result.status);
+      c.value.textContent = result.value;
+      c.value.classList.toggle('empty', result.status === 'unavailable');
+      c.note.hidden = !result.note;
+      c.note.textContent = result.note || '';
+      const image = result.detail && result.detail.canvas;
+      c.preview.hidden = !image;
+      c.preview.replaceChildren(...(image ? [image] : []));
+      if (image) image.setAttribute('aria-label', 'The hidden test drawing: text on an orange background');
+      c.hash.textContent = result.status === 'unavailable' ? 'Not available'
+        : result.hash || 'Not available: SHA-256 needs HTTPS or localhost';
+    }
+
+    function buildReport(results, combined) {
+      const lines = ['What my browser reveals', `Combined hash: ${combined || 'Not available'}`, ''];
+      for (const signal of SIGNALS) {
+        const r = results[signal.id];
+        lines.push(`${signal.name} [${LABELS[r.status]}]`, `  ${r.value}`);
+        if (r.note) lines.push(`  Note: ${r.note}`);
+        if (r.hash) lines.push(`  SHA-256: ${r.hash}`);
       }
-    };
-  </script>
+      return lines.join('\n');
+    }
+
+    function summarize(results, combined) {
+      const counts = {};
+      for (const s of SIGNALS) counts[results[s.id].status] = (counts[results[s.id].status] || 0) + 1;
+      const parts = [`${counts.ok || 0} of ${SIGNALS.length} signals read`];
+      for (const key of ['unavailable', 'blocked', 'randomized']) {
+        if (counts[key]) parts.push(`${counts[key]} ${LABELS[key].toLowerCase()}`);
+      }
+      let text = `Done. ${parts.join(', ')}. No data left this page.`;
+      if (previous) {
+        const changed = SIGNALS.filter(s => previous.results[s.id].raw !== results[s.id].raw).map(s => s.name);
+        text += changed.length ? ` Changed since your last run: ${changed.join(', ')}.` : ' Identical to your last run.';
+      }
+      previous = { results, combined };
+      return text;
+    }
+
+    $('run').addEventListener('click', async () => {
+      const run = $('run');
+      // aria-disabled rather than disabled, so keyboard focus stays on the button.
+      if (run.getAttribute('aria-disabled') === 'true') return;
+      run.setAttribute('aria-disabled', 'true');
+      $('copy').disabled = true;
+      $('copyStatus').textContent = '';
+      $('copyFallback').hidden = true;
+      status.textContent = 'Reading signals in your browser…';
+      $('combined-fp').textContent = 'Reading…';
+      for (const s of SIGNALS) setPill(cards[s.id].pill, 'busy');
+
+      const results = {};
+      await Promise.all(SIGNALS.map(async signal => {
+        results[signal.id] = await readSignal(signal);
+        showResult(signal, results[signal.id]);
+      }));
+      const combined = await combineResults(results);
+      $('combined-fp').textContent = combined || 'Not available';
+      report = buildReport(results, combined);
+      status.textContent = summarize(results, combined);
+      run.textContent = 'Run again';
+      run.removeAttribute('aria-disabled');
+      $('copy').disabled = false;
+    });
+
+    $('copy').addEventListener('click', async () => {
+      const message = $('copyStatus');
+      const fallback = $('copyFallback');
+      if (await copyText(report)) {
+        fallback.hidden = true;
+        message.textContent = 'Copied to your clipboard. These values describe your device, so share them only if you mean to.';
+      } else {
+        fallback.value = report;
+        fallback.hidden = false;
+        fallback.focus();
+        fallback.select();
+        message.textContent = 'Your browser refused the copy. The results are selected in the box below: copy them from there.';
+      }
+    });
+  }
+</script>
 </body>
 </html>

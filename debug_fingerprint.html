@@ -1,82 +1,187 @@
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>Audio Debug Fingerprint</title></head>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Audio Debug Fingerprint</title>
+<meta name="description" content="Raw detail behind the browser fingerprinting demo: rendered audio samples, canvas readback and the other signals. Runs only in your browser.">
+<link rel="icon" type="image/svg+xml" href="media/favicon.svg">
+<style>
+  :root { --bg:#0d0f14; --ink:#ece9e2; --muted:#a3a5ae; --line:rgba(255,255,255,.15); --card:rgba(20,22,29,.9); --accent:#ffc978; --accent-ink:#1d1508;
+          --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif; --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace; }
+  @media (prefers-color-scheme: light) { :root { --bg:#faf9f6; --ink:#1c1c1e; --muted:#5f5f66; --line:rgba(0,0,0,.16); --card:rgba(255,255,255,.93); --accent:#a84a24; --accent-ink:#fff; } }
+  * { box-sizing:border-box; }
+  html { -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--sans); line-height:1.55; -webkit-font-smoothing:antialiased; }
+  button,textarea { font:inherit; color:inherit; }
+  a { color:var(--accent); }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  .glass { background:var(--card); border:1px solid var(--line); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
+  .btn { display:inline-flex; align-items:center; justify-content:center; background:transparent; border:1px solid var(--line); border-radius:999px; padding:7px 16px; font-size:.9rem; cursor:pointer; min-height:36px; color:var(--ink); text-decoration:none; }
+  .btn:hover:not(:disabled) { border-color:var(--accent); }
+  .btn:disabled, .btn[aria-disabled="true"] { opacity:.55; cursor:default; }
+  .btn.primary { background:var(--accent); border-color:var(--accent); color:var(--accent-ink); font-weight:600; }
+  @media (pointer:coarse) { .btn { min-height:42px; } }
+
+  #wrap { max-width:1020px; margin:0 auto; padding:calc(env(safe-area-inset-top,0px) + 12px) 16px calc(env(safe-area-inset-bottom,0px) + 40px); }
+  #home { display:inline-flex; align-items:center; min-height:36px; border-radius:999px; padding:7px 13px; font-size:.86rem; color:var(--ink); text-decoration:none; }
+  @media (pointer:coarse) { #home { min-height:42px; } }
+  h1 { font-size:clamp(1.8rem,5vw,2.7rem); line-height:1.12; letter-spacing:-.02em; margin:28px 0 10px; }
+  .lede { font-size:1.02rem; color:var(--muted); margin:0 0 6px; max-width:44em; }
+  .panel { border-radius:16px; padding:16px 18px; }
+  #actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:18px 0 8px; }
+  #status { font-size:.9rem; color:var(--muted); margin:0 0 12px; min-height:1.55em; }
+  #copyFallback { display:block; width:100%; height:150px; margin:0 0 12px; background:transparent; border:1px solid var(--line); border-radius:10px; padding:8px 10px; font-family:var(--mono); font-size:.78rem; }
+  #copyFallback[hidden] { display:none; }
+  h2 { font-size:.76rem; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); font-weight:600; margin:0 0 8px; }
+  pre { margin:0; font-family:var(--mono); font-size:.8rem; line-height:1.6; white-space:pre-wrap; overflow-wrap:anywhere; }
+  #log:empty::before { content:"Nothing yet. Press the button to read the signals."; color:var(--muted); font-family:var(--sans); }
+  #preview:not(:empty) { margin:0 0 12px; }
+  #preview canvas { display:block; max-width:100%; border-radius:6px; }
+  details { margin-top:12px; }
+  summary { cursor:pointer; padding:8px 0; font-size:.9rem; }
+  @media (pointer:coarse) { summary { padding:12px 0; } }
+  #samples { max-height:320px; overflow-y:auto; font-size:.76rem; }
+</style>
+</head>
 <body>
-  <button id="btn">Run Audio Debug Fingerprint</button>
-  <pre id="log"></pre>
+<div id="wrap">
+  <a id="home" class="glass" href="./">← Home</a>
+  <main>
+    <h1>Fingerprint debug</h1>
+    <p class="lede">The raw values behind the <a href="fingerprint.html">fingerprinting demo</a>, starting with the audio buffer. Everything runs in your browser. Nothing is sent or stored, and no sound plays.</p>
+    <div id="actions">
+      <button class="btn primary" id="btn" type="button">Run Audio Debug Fingerprint</button>
+      <button class="btn" id="copy" type="button" disabled>Copy log</button>
+      <a class="btn" href="fingerprint.html">Back to the demo</a>
+    </div>
+    <p id="status" role="status"></p>
+    <textarea id="copyFallback" readonly hidden aria-label="Log as text, for copying by hand"></textarea>
+    <section class="glass panel" aria-label="Debug log">
+      <div id="preview"></div>
+      <pre id="log" tabindex="0"></pre>
+      <details id="samplesBox" hidden>
+        <summary>All samples in the hashed window</summary>
+        <pre id="samples" tabindex="0"></pre>
+      </details>
+    </section>
+  </main>
+</div>
 
-  <script type="module">
-    async function getAudioFingerprintDebug() {
-      const logEl = document.getElementById('log');
-      function log(msg) {
-        console.log(msg);
-        logEl.textContent += msg + "\n";
-      }
-      return new Promise((resolve, reject) => {
-        try {
-          const AudioContext = window.AudioContext || window.webkitAudioContext;
-          const ctx = new AudioContext();
-          const oscillator = ctx.createOscillator();
-          const analyser = ctx.createAnalyser();
-          const gain = ctx.createGain();
-          const scriptProcessor = ctx.createScriptProcessor(4096, 1, 1);
+<script type="module">
+  const $ = id => document.getElementById(id);
+  const logEl = $('log');
+  const status = $('status');
 
-          oscillator.type = 'sine';
-          oscillator.frequency.value = 440; // lower
+  function log(msg = '') {
+    console.log(msg);
+    logEl.textContent += msg + '\n';
+  }
 
-          gain.gain.value = 1;   // audible for now
+  let fp;
+  try {
+    fp = await import('./fingerprint.js');
+  } catch {
+    status.textContent = 'The debug script could not load, so nothing can be read. Reload the page to try again.';
+    $('btn').disabled = true;
+  }
 
-          oscillator.connect(analyser);
-          analyser.connect(gain);
-          gain.connect(scriptProcessor);
-          scriptProcessor.connect(ctx.destination);
+  if (fp) {
+    const { SIGNALS, AUDIO_SETTINGS, readSignal, combineResults, getCanvasFingerprint, copyText } = fp;
 
-          oscillator.start(0);
-
-          scriptProcessor.onaudioprocess = function(event) {
-            const buffer = event.inputBuffer.getChannelData(0);
-            let max = -Infinity, min = Infinity;
-            for (let i = 0; i < buffer.length; i++) {
-              const v = buffer[i];
-              if (v > max) max = v;
-              if (v < min) min = v;
-            }
-            log(`Buffer min: ${min}, max: ${max}`);
-
-            // If still flat:
-            if (Math.abs(max - min) < 1e-6) {
-              log("Buffer seems flat (no variation)");
-              resolve("0");
-            } else {
-              // compute hash
-              let hash = 0;
-              for (let i = 0; i < buffer.length; i++) {
-                const val = Math.floor(buffer[i] * 1000);
-                hash = ((hash << 5) - hash) + val;
-                hash |= 0;
-              }
-              resolve(hash.toString());
-            }
-
-            // cleanup
-            oscillator.stop();
-            oscillator.disconnect();
-            analyser.disconnect();
-            gain.disconnect();
-            scriptProcessor.disconnect();
-            ctx.close();
-          };
-        } catch (err) {
-          reject(err);
-        }
-      });
+    function logResultHead(signal, r) {
+      log(`--- ${signal.name} ---`);
+      log(`Status: ${r.status}`);
+      if (r.note) log(`Note: ${r.note}`);
+      if (r.error) log(`Error: ${r.error}`);
+      if (r.hash) log(`SHA-256: ${r.hash}`);
     }
 
-    document.getElementById('btn').addEventListener('click', async () => {
-      document.getElementById('log').textContent = '';
-      const fp = await getAudioFingerprintDebug();
-      document.getElementById('log').textContent += "Fingerprint: " + fp;
+    function logAudio(r) {
+      const d = r.detail;
+      log(`Settings: ${JSON.stringify(AUDIO_SETTINGS)}`);
+      if (!d) return;
+      log(`Frames rendered: ${d.samples.length}. Frames hashed: ${d.windowSamples.length}, from frame ${AUDIO_SETTINGS.windowStart}`);
+      log(`Buffer min: ${d.min}, max: ${d.max}`);
+      log(`Sum of absolute values: ${d.sum}`);
+      if (d.flat) log('Buffer seems flat (no variation)');
+      log(`Second render identical: ${d.identical ? 'yes' : 'no'}`);
+      log(`First 8 hashed samples: ${Array.from(d.windowSamples.subarray(0, 8)).join(', ')}`);
+      // 32-bit integer form, as the original debug page computed it.
+      let hash = 0;
+      for (const v of d.windowSamples) {
+        hash = ((hash << 5) - hash) + Math.floor(v * 1000);
+        hash |= 0;
+      }
+      log(`Fingerprint: ${d.flat ? '0' : hash}`);
+      $('samples').textContent = Array.from(d.windowSamples).join('\n');
+      $('samplesBox').hidden = false;
+    }
+
+    function logCanvas(r) {
+      const d = r.detail;
+      if (!d) return;
+      log(`Data URL: ${r.raw.length} characters, starting ${r.raw.slice(0, 48)}…`);
+      log(`32-bit hash: ${d.legacyHash}`);
+      log(`Second read identical: ${d.identical ? 'yes' : 'no'}`);
+      log(`Solid colour band: ${d.wrongPixels} of ${d.bandPixels} pixels changed`);
+      d.canvas.setAttribute('aria-label', 'The hidden test drawing: text on an orange background');
+      $('preview').replaceChildren(d.canvas);
+    }
+
+    function logOther(r) {
+      if (r.detail) for (const [key, val] of Object.entries(r.detail)) log(`${key}: ${typeof val === 'object' ? JSON.stringify(val) : val}`);
+    }
+
+    $('btn').addEventListener('click', async () => {
+      const btn = $('btn');
+      // aria-disabled rather than disabled, so keyboard focus stays on the button.
+      if (btn.getAttribute('aria-disabled') === 'true') return;
+      btn.setAttribute('aria-disabled', 'true');
+      $('copy').disabled = true;
+      $('copyFallback').hidden = true;
+      logEl.textContent = '';
+      $('preview').replaceChildren();
+      $('samplesBox').hidden = true;
+      status.textContent = 'Reading signals in your browser…';
+
+      const results = {};
+      for (const signal of SIGNALS) {
+        const r = results[signal.id] = await readSignal(signal);
+        logResultHead(signal, r);
+        if (signal.id === 'audio') logAudio(r);
+        else if (signal.id === 'canvas') logCanvas(r);
+        else logOther(r);
+        log();
+      }
+
+      log('--- Combined ---');
+      log(`SHA-256 of all signals: ${await combineResults(results) || 'Not available'}`);
+      if (results.audio.hash && results.canvas.detail) {
+        log(`Audio and canvas only: ${results.audio.hash}_${getCanvasFingerprint()}`);
+      }
+
+      status.textContent = 'Done. Nothing left this page.';
+      btn.removeAttribute('aria-disabled');
+      $('copy').disabled = false;
     });
-  </script>
+
+    $('copy').addEventListener('click', async () => {
+      const text = logEl.textContent;
+      const fallback = $('copyFallback');
+      if (await copyText(text)) {
+        fallback.hidden = true;
+        status.textContent = 'Copied to your clipboard.';
+      } else {
+        fallback.value = text;
+        fallback.hidden = false;
+        fallback.focus();
+        fallback.select();
+        status.textContent = 'Your browser refused the copy. The log is selected in the box below: copy it from there.';
+      }
+    });
+  }
+</script>
 </body>
 </html>
