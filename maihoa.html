@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Mai Hoa Dịch Số – Thiệu Khang Tiết</title>
-<meta name="description" content="Công cụ Mai Hoa Dịch Số: đổi ngày giờ dương lịch sang âm lịch, tính Can Chi và lập quẻ chủ, quẻ biến theo Niên Nguyệt Nhật Thời.">
+<meta name="description" content="Công cụ Mai Hoa Dịch Số: đổi ngày giờ dương lịch sang âm lịch, tính Can Chi và lập quẻ chủ, quẻ hỗ, quẻ biến theo Niên Nguyệt Nhật Thời.">
 <link rel="icon" type="image/svg+xml" href="media/favicon.svg">
 <style>
   :root { --bg:#0d0f14; --ink:#ece9e2; --muted:#a3a5ae; --line:rgba(255,255,255,.15); --card:rgba(20,22,29,.9); --accent:#ffc978; --accent-ink:#1d1508;
@@ -66,6 +66,7 @@
   .workings { margin:8px 0 0; color:var(--muted); font-size:.88rem; line-height:1.5; font-variant-numeric:tabular-nums; }
   .hexes { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px; }
   .hex { border-radius:18px; padding:16px 14px; margin:0; min-width:0; }
+  .hex.ho { order:1; grid-column:1 / -1; justify-self:center; width:calc(50% - 5px); }
   .hex h2 { margin-bottom:12px; }
   .fig { display:flex; flex-direction:column; gap:7px; }
   .yao { display:grid; grid-template-columns:1em minmax(0,1fr) 2.6em; align-items:center; gap:7px; }
@@ -101,13 +102,12 @@
   @media (min-width:600px) {
     .fields { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
     .wide { grid-column:auto; }
-    .hexes { grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); align-items:center; }
+    .hexes { grid-template-columns:repeat(3,minmax(0,1fr)); }
+    .hex.ho { order:0; grid-column:auto; justify-self:stretch; width:auto; }
     .hex { padding:18px; }
     .fig { gap:9px; }
     .yao .bar { height:15px; }
-    .arrow { display:block !important; }
   }
-  .arrow { display:none; color:var(--accent); font-size:1.4rem; }
   @media (prefers-reduced-motion:reduce) { summary::before { transition:none; } }
 </style>
 </head>
@@ -172,7 +172,11 @@
         <div class="fig" role="img"></div>
         <figcaption><p class="name"></p><p class="han" lang="zh-Hant"></p><p class="tri"></p></figcaption>
       </figure>
-      <span class="arrow" aria-hidden="true">→</span>
+      <figure class="hex glass ho" id="hexHo">
+        <h2>Quẻ hỗ</h2>
+        <div class="fig" role="img"></div>
+        <figcaption><p class="name"></p><p class="han" lang="zh-Hant"></p><p class="tri"></p></figcaption>
+      </figure>
       <figure class="hex glass" id="hexChanged">
         <h2>Quẻ biến</h2>
         <div class="fig" role="img"></div>
@@ -193,8 +197,11 @@
         <li>Hạ quái = (năm + tháng + ngày + giờ) mod 8</li>
         <li>Hào động = (năm + tháng + ngày + giờ) mod 6</li>
       </ul>
+      <p>Từ 23:00 đã là giờ Tý của ngày hôm sau, nên ngày âm lịch và Can Chi tính theo ngày mới.</p>
       <p>Số dư 0 được tính là 8 với quái và 6 với hào. Thứ tự quái: 1 Càn, 2 Đoài, 3 Ly, 4 Chấn, 5 Tốn, 6 Khảm, 7 Cấn, 8 Khôn.</p>
       <p>Ví dụ “Quan mai chiêm”: năm Thìn (5), tháng 12, ngày 17, giờ Thân (9). Tổng 34 chia 8 dư 2 là Đoài ở trên. Tổng 43 chia 8 dư 3 là Ly ở dưới, chia 6 dư 1 là hào 1 động. Được quẻ Trạch Hỏa Cách, biến Trạch Sơn Hàm.</p>
+      <h3>Quẻ hỗ</h3>
+      <p>Lấy từ quẻ chủ: hào 2, 3, 4 làm hạ quái và hào 3, 4, 5 làm thượng quái.</p>
       <h3>Phương án A (không tính năm)</h3>
       <ul>
         <li>Thượng quái = (tháng + ngày) mod 8</li>
@@ -207,7 +214,7 @@
         <li>Hạ quái = (ngày + tháng) mod 8</li>
         <li>Hào động = (tháng + ngày + giờ) mod 6</li>
       </ul>
-      <p>Hai phương án này là cách tính cũ của trang, chỉ giữ lại để đối chiếu với kết quả trước đây.</p>
+      <p>Hai phương án này là cách tính cũ của trang, chỉ giữ lại để đối chiếu với kết quả trước đây, nên vẫn tính giờ sau 23:00 vào ngày hiện tại.</p>
     </div>
   </details>
 
@@ -301,9 +308,13 @@ function compute(solar,time,iana,useVN,variant){
   const [hh,mm]=time.split(":").map(Number);
   const tz=useVN?7:offsetHoursAt(iana,y,m,d,hh,mm);
 
-  const [dayAm,monthAm,yearAm,leap]=AmLich.convertSolar2Lunar(d,m,y,tz);
+  // Từ 23:00 đã là giờ Tý của ngày hôm sau, nên ngày âm lịch và Can Chi tính theo ngày mới.
+  const lateTy=variant==="N"&&hh===23;
+  const nd=new Date(Date.UTC(y,m-1,d+(lateTy?1:0)));
+  const cd=nd.getUTCDate(),cm=nd.getUTCMonth()+1,cy=nd.getUTCFullYear();
+  const [dayAm,monthAm,yearAm,leap]=AmLich.convertSolar2Lunar(cd,cm,cy,tz);
   const chiHour=chiIndexFromHour(hh);
-  const {dayCan,dayChi,dayCanIndex}=dayCanChi(d,m,y);
+  const {dayCan,dayChi,dayCanIndex}=dayCanChi(cd,cm,cy);
   const {yearCan,yearChi,yearCanIndex}=yearCanChi(yearAm);
   const {monthCan,monthChi}=monthCanChi(monthAm,yearCanIndex);
   const {hourCan,hourChi}=hourCanChi(dayCanIndex,chiHour);
@@ -323,6 +334,11 @@ function compute(solar,time,iana,useVN,variant){
   const idx1 = (upperFromLines - 1) * 8 + lowerFromLines;
   const idx2 = (upper2FromLines - 1) * 8 + lower2FromLines;
 
+  // Quẻ hỗ: hào 2, 3, 4 làm hạ quái, hào 3, 4, 5 làm thượng quái.
+  const hoLines=[lines[1],lines[2],lines[3],lines[2],lines[3],lines[4]];
+  const hoLower=trigramIndex(hoLines.slice(0,3)),hoUpper=trigramIndex(hoLines.slice(3,6));
+  const hoHex=HEX_NAMES[(hoUpper-1)*8+hoLower];
+
   const main = HEX_NAMES[idx1];
   const changedHex = HEX_NAMES[idx2];
 
@@ -332,7 +348,7 @@ function compute(solar,time,iana,useVN,variant){
     );
   }
 
-  return {d,m,y,hh,mm,dayAm,monthAm,yearAm,leap,useVN,iana,variant,yearChiNo,chiHour,upper,lower,
+  return {d,m,y,hh,mm,dayAm,monthAm,yearAm,leap,useVN,iana,variant,yearChiNo,chiHour,upper,lower,lateTy,cd,cm,cy,hoLines,hoHex,triHo:[hoUpper,hoLower],
     hour:[hourCan,hourChi],day:[dayCan,dayChi],month:[monthCan,monthChi],year:[yearCan,yearChi],
     lines,changed,moving,main,changedHex,
     tri1:[upperFromLines,lowerFromLines],tri2:[upper2FromLines,lower2FromLines]};
@@ -381,6 +397,7 @@ function show(r){
   $("rTz").textContent=r.useVN?"VN (UTC+7)":r.iana;
   setPillar("pHour",r.hour);setPillar("pDay",r.day);setPillar("pMonth",r.month);setPillar("pYear",r.year);
   drawHex($("hexMain"),r.lines,r.moving,"moving",r.main,r.tri1);
+  drawHex($("hexHo"),r.hoLines,0,"",r.hoHex,r.triHo);
   drawHex($("hexChanged"),r.changed,r.moving,"turned",r.changedHex,r.tri2);
   const was=r.lines[r.moving-1]?"dương":"âm",now=r.changed[r.moving-1]?"dương":"âm";
   const line=$("moveLine");line.textContent="Hào động: ";
@@ -388,7 +405,7 @@ function show(r){
   line.append(b,` (${was} đổi thành ${now}).`);
   const w=$("workings");w.hidden=r.variant!=="N";
   if(r.variant==="N"){const base=r.yearChiNo+r.monthAm+r.dayAm,total=base+r.chiHour;
-    w.textContent=`Năm ${r.year[1]} (${r.yearChiNo}) + tháng ${r.monthAm} + ngày ${r.dayAm} = ${base}, chia 8 dư ${base%8}: ${TRIGRAMS[r.upper].vn} ở trên. Thêm giờ ${CHI[r.chiHour-1]} (${r.chiHour}) = ${total}, chia 8 dư ${total%8}: ${TRIGRAMS[r.lower].vn} ở dưới; chia 6 dư ${total%6}: hào ${r.moving} động.`;}
+    w.textContent=`${r.lateTy?`Sau 23:00 là giờ Tý của ngày mới, nên tính theo ngày ${r.cd}/${r.cm}/${r.cy}. `:""}Năm ${r.year[1]} (${r.yearChiNo}) + tháng ${r.monthAm} + ngày ${r.dayAm} = ${base}, chia 8 dư ${base%8}: ${TRIGRAMS[r.upper].vn} ở trên. Thêm giờ ${CHI[r.chiHour-1]} (${r.chiHour}) = ${total}, chia 8 dư ${total%8}: ${TRIGRAMS[r.lower].vn} ở dưới; chia 6 dư ${total%6}: hào ${r.moving} động.`;}
   $("result").hidden=false;$("result").classList.remove("stale");
 }
 
