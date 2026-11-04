@@ -11,6 +11,9 @@ Software engineer. I build systems at work and small, self-contained tools every
 Matrix algebra has a natural chip: the multiply-accumulate array. I have been assembling the t-product "cube algebra" of 3-tensors into one textbook-style development, with the thesis that its natural accelerator is a transform followed by a batch of ordinary matrix multiplies. Every matrix theorem lifts, and the reason why is the same reason the hardware is simple.
 Write-up: cube.html (source: cube_algebra_theory.md)
 
+### How do we educate the next generation in the age of AI?
+This is my ongoing question, and I don't have a finished answer. What I keep coming back to is that learning should be both fun and include struggle.
+
 ### A web that agents can read
 A page should say the same thing to a person in a browser and to a model fetching raw text. This site ships this Markdown twin and an llms.txt, and I am interested in what else a site should expose once agents, not just people, are the visitors.
 
@@ -27,7 +30,7 @@ I keep the books and courses I have worked through as a force-directed graph of 
 Map: knowledge/
 
 ## Interests
-Distributed systems, storage and replication, linear algebra and tensors, interpreters and compilers, LLM agents, quantitative finance, time series, graph databases, cellular automata, astronomy simulations, piano and ear training, spaced repetition, Mai Hoa Dịch Số.
+I want to keep exploring distributed systems, AI and math. In my free time I love learning physics and neuroscience. Chess is my hobby. Sometimes I play badminton, and I love exploring any kind of sport.
 
 ## What I can build
 - Backend systems: server-side services in Java, Go, C++, Python and Scala at large scale. Replication and recovery for distributed storage, data pipelines, API design, safe rollouts across regions.

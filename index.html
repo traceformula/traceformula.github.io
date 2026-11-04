@@ -10,7 +10,7 @@
   <link rel="icon" type="image/svg+xml" href="media/favicon.svg">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Thanh Nguyen">
-  <meta property="og:description" content="Ask me anything. Systems engineer; builds browser tools, math write-ups and learning aids.">
+  <meta property="og:description" content="Ask Thanh anything. Systems engineer; builds browser tools, math write-ups and learning aids.">
   <meta name="twitter:card" content="summary">
   <meta name="theme-color" content="#faf9f6" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#101114" media="(prefers-color-scheme: dark)">
@@ -54,7 +54,7 @@
     #chips.wait .chip { animation: none; }
     #ui:has(#suggest:not(:empty)) #chips { display: none; }
     .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-    @media (pointer: coarse) { .chip { padding: 12px 14px; } }
+    @media (pointer: coarse) { .chip { padding: 12px 14px; } #suggest li { padding: 13px 14px; } }
 
     #you { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); font-size: 0.9rem; color: var(--muted); align-self: flex-start; margin-left: 14px; padding: 4px 12px; border-radius: 999px; background: var(--card); border: 1px solid var(--line); opacity: 0; transition: opacity .4s; }
     #you:empty { display: none; }
@@ -67,6 +67,7 @@
       border: 1px solid var(--line); box-shadow: var(--shadow);
       opacity: 0; transform: translateY(6px); transition: opacity .35s, transform .35s;
     }
+    #say:focus { outline: none; }
     #say.show { opacity: 1; transform: none; }
     #say:empty { display: none; }
     #say .caret { display: inline-block; width: 2px; height: 1em; background: var(--accent); vertical-align: -0.15em; margin-left: 2px; margin-right: -4px; animation: blink 1s steps(2) infinite; }
@@ -82,13 +83,14 @@
     }
     .chip:hover { border-color: var(--accent); }
     .chip.link { color: var(--accent); }
-    @keyframes rise { from { opacity: 0; transform: translateY(6px);} to { opacity: 1; transform: none; } }
+    @keyframes rise { from { opacity: 0; } to { opacity: 1; } }
 
     #suggest {
       list-style: none; margin: 0; padding: 6px; border-radius: 16px;
       background: var(--card); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
       border: 1px solid var(--line); box-shadow: var(--shadow);
     }
+    #suggest { max-height: 40vh; overflow-y: auto; }
     #suggest:empty { display: none; }
     #suggest li { padding: 10px 14px; border-radius: 10px; cursor: pointer; font-size: 1rem; }
     #suggest li.active, #suggest li:hover { background: var(--accent-soft); }
@@ -123,13 +125,13 @@
 
   <div id="ui">
     <div id="you"></div>
-    <div id="say"></div>
+    <div id="say" tabindex="-1"></div>
     <div id="sr" class="sr" aria-live="polite"></div>
     <div id="chips"></div>
     <ul id="suggest" role="listbox"></ul>
     <form id="ask" autocomplete="off">
-      <input id="q" type="text" aria-label="Ask me anything" autocomplete="off" autocapitalize="sentences" spellcheck="false" enterkeyhint="send">
-      <span id="hint">Ask me anything</span>
+      <input id="q" type="text" aria-label="Ask Thanh anything" autocomplete="off" autocapitalize="sentences" spellcheck="false" enterkeyhint="send">
+      <span id="hint">Ask Thanh anything</span>
     </form>
   </div>
 
@@ -195,10 +197,11 @@
   }
   function ripple(x, y, amp, life) { if (!reduce) ripples.push({ x, y, amp, life, t: performance.now() }); }
 
-  let lastSample = 0;
+  let lastSample = 0, dirty = true;
   function frame(t) {
     requestAnimationFrame(frame);
-    if (t - lastSample > 33 || flexing) { sample(); lastSample = t; }
+    if (reduce && !flexing && !dirty) return;
+    if (t - lastSample > 33 || flexing || dirty) { if (sample()) dirty = false; lastSample = t; }
     X.fillStyle = bg; X.fillRect(0, 0, W, H);
     X.fillStyle = ink;
     mouse.x += (mouse.tx - mouse.x) * 0.15; mouse.y += (mouse.ty - mouse.y) * 0.15;
@@ -240,8 +243,11 @@
   V.addEventListener('ended', () => { flexing = false; V.currentTime = 0; });
   function flex() { flexing = true; V.currentTime = 0; const p = V.play(); if (p && p.catch) p.catch(() => { flexing = false; }); }
 
-  addEventListener('resize', resize);
-  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', theme);
+  addEventListener('resize', () => { resize(); dirty = true; });
+  V.addEventListener('loadeddata', () => { dirty = true; });
+  V.addEventListener('seeked', () => { dirty = true; });
+  poster.addEventListener('load', () => { dirty = true; });
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { theme(); dirty = true; });
   C.addEventListener('pointermove', e => { mouse.tx = e.clientX; mouse.ty = e.clientY; mouse.inside = true; });
   C.addEventListener('pointerleave', () => { mouse.inside = false; mouse.tx = -1e4; mouse.ty = -1e4; });
   C.addEventListener('pointerdown', e => { ripple(e.clientX, e.clientY, 0.6, 1200); prime(); if (!asked) ask(byId.hello, ''); });
@@ -256,7 +262,7 @@
   const $q = document.getElementById('q'), $hint = document.getElementById('hint'), $sug = document.getElementById('suggest');
   const $say = document.getElementById('say'), $you = document.getElementById('you'), $chips = document.getElementById('chips');
   const STOP = new Set('what are you your do does the a an is i me my of to and can could would tell on in for it that with be have has was were am some any please u ur'.split(' '));
-  let QA = null, byId = {}, asked = false, active = -1, list = [], typing = 0, idleTimer = 0;
+  let QA = null, byId = Object.create(null), asked = false, active = -1, list = [], typing = 0, idleTimer = 0;
 
   const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9+ ]/g, ' ').split(/\s+/).filter(w => w && !STOP.has(w));
 
@@ -274,19 +280,19 @@
     }).filter(m => m.s > 0).sort((a, b) => b.s - a.s).map(m => m.it);
   }
 
-  function showSuggest(items) {
-    list = items.slice(0, 4); active = -1;
+  function showSuggest(items, limit = 4) {
+    list = items.slice(0, limit); active = -1;
     $sug.innerHTML = '';
     list.forEach((it, i) => { const li = document.createElement('li'); li.textContent = it.q; li.setAttribute('role', 'option'); li.addEventListener('pointerdown', e => { e.preventDefault(); ask(it, ''); }); $sug.appendChild(li); });
   }
-  function setActive(i) { active = i; [...$sug.children].forEach((li, j) => li.classList.toggle('active', j === i)); }
+  function setActive(i) { active = i; [...$sug.children].forEach((li, j) => { li.classList.toggle('active', j === i); if (j === i) li.scrollIntoView({ block: 'nearest' }); }); }
   function starters() { return QA.starters.map(id => byId[id]); }
 
   function chips(links, next) {
     $chips.innerHTML = '';
     let delay = 0;
     (links || []).forEach(l => { const a = document.createElement('a'); a.className = 'chip link'; a.href = l.u; a.textContent = l.t; a.style.animationDelay = (delay += 60) + 'ms'; $chips.appendChild(a); });
-    (next || []).forEach(id => { const it = byId[id]; if (!it) return; const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = it.q; b.style.animationDelay = (delay += 60) + 'ms'; b.addEventListener('click', () => ask(it, '')); $chips.appendChild(b); });
+    (next || []).forEach(id => { const it = byId[id]; if (!it) return; const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = it.q; b.style.animationDelay = (delay += 60) + 'ms'; b.addEventListener('click', e => { ask(it, ''); if (e.detail === 0) $say.focus({ preventScroll: true }); }); $chips.appendChild(b); });
   }
 
   function say(text, done) {
@@ -317,7 +323,16 @@
     step();
   }
 
+  // Slash commands: /help lists them, the others open a page or give an answer.
+  const cmdWord = v => v.slice(1).trim().toLowerCase();
+  const cmdItems = v => { const w = cmdWord(v); return QA.commands.filter(c => c.c.startsWith(w) || (c.al || []).includes(w)).map(c => ({ q: '/' + c.c + ' · ' + c.t, cmd: c })); };
+  function runCmd(c, text) {
+    if (c.help) return reply(text, 'Commands: ' + QA.commands.map(x => '/' + x.c).join(', ') + '. Or just ask me anything.', [], ['all', 'contact']);
+    if (c.ask) return ask(byId[c.ask], text);
+    $q.value = ''; showSuggest([]); location.href = c.u;
+  }
   function ask(it, userText) {
+    if (it.cmd) return runCmd(it.cmd, '/' + it.cmd.c);
     asked = true; clearTimeout(idleTimer); $hint.textContent = HINTS[0];
     $you.textContent = userText || it.q; $you.classList.add('show');
     $q.value = ''; $hint.classList.remove('hide'); showSuggest([]); $chips.innerHTML = '';
@@ -328,15 +343,28 @@
     say(it.a, () => $chips.classList.remove('wait'));
   }
   function askText(text) {
+    if (text[0] === '/') {
+      const w = cmdWord(text), hits = cmdItems(text);
+      const c = QA.commands.find(x => x.c === w || (x.al || []).includes(w)) || (hits.length === 1 ? hits[0].cmd : null);
+      return c ? runCmd(c, text) : reply(text, "I don't know that command. Try /help.", [], ['all', 'contact']);
+    }
+    const toks = norm(text);
     const m = match(text);
+    // Asks for specifics the site does not hold (dates, pay, reasons for leaving): invite them to ask directly.
+    if (toks.some(t => QA.detail.k.includes(t))) return reply(text, QA.detail.a, QA.detail.links, QA.detail.next);
     if (m.length) return ask(m[0], text);
+    reply(text, QA.fallback, QA.detail.links, QA.starters);
+  }
+  function reply(text, answer, links, next) {
     asked = true; clearTimeout(idleTimer); $hint.textContent = HINTS[0]; $you.textContent = text; $you.classList.add('show'); $q.value = ''; showSuggest([]); $chips.innerHTML = '';
-    chips([], QA.starters); $chips.classList.add('wait');
-    say(QA.fallback, () => $chips.classList.remove('wait'));
+    chips(links, next); $chips.classList.add('wait');
+    if (innerWidth < 700) $q.blur();
+    history.replaceState(null, '', location.pathname + location.search);
+    say(answer, () => $chips.classList.remove('wait'));
   }
 
   // hints cycle only until the first question, while the field is empty and unfocused
-  const HINTS = ['Ask me anything', 'Ask what I am working on', 'Ask what I can build', 'Ask about the piano tools', 'Say hello', 'Ask if I am real'];
+  const HINTS = ['Ask Thanh anything', 'Ask what I am working on', 'Ask what I can build', 'Ask about the piano tools', 'Say hello', 'Ask if I am real', 'Type /help for commands'];
   let hi = 0;
   setInterval(() => { if (asked || reduce || $q.value || document.activeElement === $q) return; $hint.classList.add('hide'); setTimeout(() => { hi = (hi + 1) % HINTS.length; $hint.textContent = HINTS[hi]; $hint.classList.remove('hide'); }, 500); }, 4200);
 
@@ -347,6 +375,7 @@
     $hint.classList.toggle('hide', true);
     const v = $q.value.trim();
     if (!v) { showSuggest(starters()); return; }
+    if (v[0] === '/') { showSuggest(cmdItems(v), 99); return; }
     const m = match(v);
     showSuggest(m.length ? m : starters());
     if (v.length % 3 === 0) ripple(mouth.x, mouth.y, 0.25, 600);
@@ -363,7 +392,7 @@
     if (!v) return ask(byId.hello, '');
     askText(v);
   });
-  addEventListener('keydown', e => { if (e.key === '/' && document.activeElement !== $q) { e.preventDefault(); $q.focus(); } });
+  addEventListener('keydown', e => { if (e.key === '/' && document.activeElement !== $q) $q.focus(); });
 
   fetch('qa.json').then(r => r.json()).then(d => {
     QA = d;
