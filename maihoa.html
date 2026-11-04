@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Mai Hoa Dịch Số – Thiệu Khang Tiết</title>
-<meta name="description" content="Công cụ Mai Hoa Dịch Số: đổi ngày giờ dương lịch sang âm lịch, tính Can Chi và lập quẻ chủ, quẻ biến theo hai phương án.">
+<meta name="description" content="Công cụ Mai Hoa Dịch Số: đổi ngày giờ dương lịch sang âm lịch, tính Can Chi và lập quẻ chủ, quẻ biến theo Niên Nguyệt Nhật Thời.">
 <link rel="icon" type="image/svg+xml" href="media/favicon.svg">
 <style>
   :root { --bg:#0d0f14; --ink:#ece9e2; --muted:#a3a5ae; --line:rgba(255,255,255,.15); --card:rgba(20,22,29,.9); --accent:#ffc978; --accent-ink:#1d1508;
@@ -63,6 +63,7 @@
   .pillars dd { margin:2px 0 0; font-weight:600; line-height:1.3; }
   .pillars dd span { display:block; }
 
+  .workings { margin:8px 0 0; color:var(--muted); font-size:.88rem; line-height:1.5; font-variant-numeric:tabular-nums; }
   .hexes { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px; }
   .hex { border-radius:18px; padding:16px 14px; margin:0; min-width:0; }
   .hex h2 { margin-bottom:12px; }
@@ -119,7 +120,7 @@
       <svg viewBox="-12 -12 24 24" aria-hidden="true"><g fill="currentColor"><circle cy="-6.6" r="4.6"/><circle cy="-6.6" r="4.6" transform="rotate(72)"/><circle cy="-6.6" r="4.6" transform="rotate(144)"/><circle cy="-6.6" r="4.6" transform="rotate(216)"/><circle cy="-6.6" r="4.6" transform="rotate(288)"/></g><circle r="2.5" fill="var(--bg)"/></svg>
       Mai Hoa Dịch Số – Thiệu Khang Tiết
     </h1>
-    <p class="lead">Đổi ngày giờ dương lịch sang âm lịch, tính Can Chi và lập quẻ theo hai phương án.</p>
+    <p class="lead">Đổi ngày giờ dương lịch sang âm lịch, tính Can Chi và lập quẻ theo Niên Nguyệt Nhật Thời.</p>
   </header>
 
   <form id="form" class="panel glass" novalidate>
@@ -128,8 +129,9 @@
       <label class="field"><span>Giờ (hh:mm)</span><input type="time" id="solarTime"></label>
       <label class="field wide"><span>Phương án</span>
         <select id="variant">
-          <option value="B" selected>Phương án B (Thiệu Khang Tiết)</option>
-          <option value="A">Phương án A (thông thường)</option>
+          <option value="N" selected>Niên Nguyệt Nhật Thời (có tính năm)</option>
+          <option value="B">Phương án B (không tính năm)</option>
+          <option value="A">Phương án A (không tính năm)</option>
         </select>
       </label>
       <label class="field wide"><span>Múi giờ</span>
@@ -178,26 +180,34 @@
       </figure>
     </div>
     <p class="moveline" id="moveLine"></p>
+    <p id="workings" class="workings" hidden></p>
   </section>
 
   <details class="glass">
-    <summary>Giải thích hai phương án</summary>
+    <summary>Giải thích các phương án</summary>
     <div class="explain">
-      <h3>Phương án A (phổ thông)</h3>
+      <h3>Niên Nguyệt Nhật Thời (mặc định)</h3>
+      <p>Cách lập quẻ theo thời gian trong Mai Hoa Dịch Số. Năm và giờ tính theo số địa chi (Tý = 1, Sửu = 2, … Hợi = 12), tháng và ngày theo âm lịch.</p>
+      <ul>
+        <li>Thượng quái = (năm + tháng + ngày) mod 8</li>
+        <li>Hạ quái = (năm + tháng + ngày + giờ) mod 8</li>
+        <li>Hào động = (năm + tháng + ngày + giờ) mod 6</li>
+      </ul>
+      <p>Số dư 0 được tính là 8 với quái và 6 với hào. Thứ tự quái: 1 Càn, 2 Đoài, 3 Ly, 4 Chấn, 5 Tốn, 6 Khảm, 7 Cấn, 8 Khôn.</p>
+      <p>Ví dụ “Quan mai chiêm”: năm Thìn (5), tháng 12, ngày 17, giờ Thân (9). Tổng 34 chia 8 dư 2 là Đoài ở trên. Tổng 43 chia 8 dư 3 là Ly ở dưới, chia 6 dư 1 là hào 1 động. Được quẻ Trạch Hỏa Cách, biến Trạch Sơn Hàm.</p>
+      <h3>Phương án A (không tính năm)</h3>
       <ul>
         <li>Thượng quái = (tháng + ngày) mod 8</li>
         <li>Hạ quái = (ngày + giờ) mod 8</li>
         <li>Hào động = (tháng + ngày + giờ) mod 6</li>
       </ul>
-      <p>Dễ hiểu, phổ biến trong các sách Dịch học hiện đại.</p>
-      <h3>Phương án B (Thiệu Khang Tiết – Mai Hoa chuẩn)</h3>
+      <h3>Phương án B (không tính năm)</h3>
       <ul>
-        <li>Thượng quái = (tháng + giờ) mod 8</li>
+        <li>Thượng quái = (tháng + giờ) mod 8, rồi đổi theo bảng 1 Càn, 2 Khôn, 3 Chấn, 4 Tốn, 5 Khảm, 6 Ly, 7 Cấn, 8 Đoài</li>
         <li>Hạ quái = (ngày + tháng) mod 8</li>
         <li>Hào động = (tháng + ngày + giờ) mod 6</li>
       </ul>
-      <p>Nhấn mạnh “thiên – nhân – địa” phối hợp (thiên thời là tháng, nhân là ngày, địa là giờ). Dùng cho Mai Hoa Dịch Số nguyên bản của Thiệu Khang Tiết (Bắc Tống).</p>
-      <p><i>Phương án B</i> thường cho kết quả “thuần dịch lý” và tương thích với bản đồ quẻ trong Thiệu tiên sinh, còn <i>phương án A</i> dùng thuận tiện hơn trong các hệ giản hóa hiện đại.</p>
+      <p>Hai phương án này là cách tính cũ của trang, chỉ giữ lại để đối chiếu với kết quả trước đây.</p>
     </div>
   </details>
 
@@ -275,7 +285,9 @@ const HEX_NAMES = [
 ];
 
 
-function getHexIndices(dayAm,monthAm,hourChi,variant){
+// Phương án N là cách lập quẻ theo Niên Nguyệt Nhật Thời: năm tính theo số địa chi (Tý = 1 … Hợi = 12).
+function getHexIndices(dayAm,monthAm,hourChi,variant,yearChi){
+  if(variant==="N"){const base=yearChi+monthAm+dayAm,total=base+hourChi;return {upper:mod1(base,8),lower:mod1(total,8),moving:mod1(total,6)};}
   const moving=((monthAm+dayAm+hourChi-1)%6)+1;
   let upperN,lowerN,up,lo;
   if(variant==="B"){upperN=((monthAm+hourChi-1)%8)+1;lowerN=((dayAm+monthAm-1)%8)+1;up=MAP_B_UPPER[upperN];lo=MAP_B_LOWER[lowerN];}
@@ -284,7 +296,6 @@ function getHexIndices(dayAm,monthAm,hourChi,variant){
 }
 
 
-// Phép tính giữ nguyên như trang cũ; chỉ tách phần hiển thị ra khỏi phần tính.
 function compute(solar,time,iana,useVN,variant){
   const [y,m,d]=solar.split("-").map(Number);
   const [hh,mm]=time.split(":").map(Number);
@@ -296,7 +307,8 @@ function compute(solar,time,iana,useVN,variant){
   const {yearCan,yearChi,yearCanIndex}=yearCanChi(yearAm);
   const {monthCan,monthChi}=monthCanChi(monthAm,yearCanIndex);
   const {hourCan,hourChi}=hourCanChi(dayCanIndex,chiHour);
-  const {upper,lower,moving}=getHexIndices(dayAm,monthAm,chiHour,variant);
+  const yearChiNo=CHI.indexOf(yearChi)+1;
+  const {upper,lower,moving}=getHexIndices(dayAm,monthAm,chiHour,variant,yearChiNo);
 
   const lines=build(lower,upper);
   const changed=mutate(lines,moving);
@@ -320,7 +332,7 @@ function compute(solar,time,iana,useVN,variant){
     );
   }
 
-  return {d,m,y,hh,mm,dayAm,monthAm,yearAm,leap,useVN,iana,
+  return {d,m,y,hh,mm,dayAm,monthAm,yearAm,leap,useVN,iana,variant,yearChiNo,chiHour,upper,lower,
     hour:[hourCan,hourChi],day:[dayCan,dayChi],month:[monthCan,monthChi],year:[yearCan,yearChi],
     lines,changed,moving,main,changedHex,
     tri1:[upperFromLines,lowerFromLines],tri2:[upper2FromLines,lower2FromLines]};
@@ -374,6 +386,9 @@ function show(r){
   const line=$("moveLine");line.textContent="Hào động: ";
   const b=document.createElement("b");b.textContent=`hào ${r.moving}`;
   line.append(b,` (${was} đổi thành ${now}).`);
+  const w=$("workings");w.hidden=r.variant!=="N";
+  if(r.variant==="N"){const base=r.yearChiNo+r.monthAm+r.dayAm,total=base+r.chiHour;
+    w.textContent=`Năm ${r.year[1]} (${r.yearChiNo}) + tháng ${r.monthAm} + ngày ${r.dayAm} = ${base}, chia 8 dư ${base%8}: ${TRIGRAMS[r.upper].vn} ở trên. Thêm giờ ${CHI[r.chiHour-1]} (${r.chiHour}) = ${total}, chia 8 dư ${total%8}: ${TRIGRAMS[r.lower].vn} ở dưới; chia 6 dư ${total%6}: hào ${r.moving} động.`;}
   $("result").hidden=false;$("result").classList.remove("stale");
 }
 
