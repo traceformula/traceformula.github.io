@@ -12,7 +12,7 @@ Matrix algebra has a natural chip: the multiply-accumulate array. I have been as
 Write-up: cube.html (source: cube_algebra_theory.md)
 
 ### How do we educate the next generation in the age of AI?
-This is my ongoing question, and I don't have a finished answer. What I keep coming back to is that learning should be both fun and include struggle.
+This is a tough question I have been thinking about, and I have no concrete answer yet.
 
 ### A web that agents can read
 A page should say the same thing to a person in a browser and to a model fetching raw text. This site ships this Markdown twin and an llms.txt, and I am interested in what else a site should expose once agents, not just people, are the visitors.
@@ -26,7 +26,7 @@ I am learning piano as an adult and built my own drills: ear training, note read
 Tools: piano/
 
 ### Reading as a graph, not a list
-I keep the books and courses I have worked through as a force-directed graph of a couple thousand topics. Clusters: distributed systems, linear algebra for machine learning, quantitative finance, LLM agents.
+I keep the books and courses I have skimmed through as a force-directed graph of a couple thousand topics. Clusters: distributed systems, linear algebra for machine learning, quantitative finance, LLM agents.
 Map: knowledge/
 
 ## Interests
@@ -34,7 +34,7 @@ I want to keep exploring distributed systems, AI and math. In my free time I lov
 
 ## What I can build
 - Backend systems: server-side services in Java, Go, C++, Python and Scala at large scale. Replication and recovery for distributed storage, data pipelines, API design, safe rollouts across regions.
-- Browser-first tools: complete applications in plain HTML, CSS and JavaScript (Canvas, Web Audio, service workers, local persistence). No framework, no build step, installable on a phone.
+- Browser-first tools: complete applications in plain HTML, CSS and JavaScript (Canvas, Web Audio, service workers, local persistence). No framework, no build step, works offline on a phone.
 - Interpreters and visualizations: a Python interpreter in JavaScript, physics and cellular-automaton simulations, a LaTeX renderer, force-directed graphs.
 - Mathematical writing: assembling a research literature into a single coherent exposition with textbook-level proofs and the computational primitive made explicit.
 - Solo shipping: from idea to a live URL, including data curation, mobile audio quirks, offline caching and in-place updates.

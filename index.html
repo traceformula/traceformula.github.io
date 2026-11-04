@@ -328,8 +328,17 @@
   const cmdItems = v => { const w = cmdWord(v); return QA.commands.filter(c => c.c.startsWith(w) || (c.al || []).includes(w)).map(c => ({ q: '/' + c.c + ' · ' + c.t, cmd: c })); };
   function runCmd(c, text) {
     if (c.help) return reply(text, 'Commands: ' + QA.commands.map(x => '/' + x.c).join(', ') + '. Or just ask me anything.', [], ['all', 'contact']);
+    if (c.clear) return clearChat();
     if (c.ask) return ask(byId[c.ask], text);
     $q.value = ''; showSuggest([]); location.href = c.u;
+  }
+  function clearChat() {
+    clearTimeout(typing); $say.onclick = null; speaking = false; asked = false;
+    $say.textContent = ''; $say.classList.remove('show'); $you.textContent = ''; $you.classList.remove('show');
+    document.getElementById('sr').textContent = '';
+    $q.value = ''; showSuggest([]); $chips.classList.remove('wait'); chips([], QA.starters);
+    if (innerWidth < 700) $q.blur();
+    history.replaceState(null, '', location.pathname + location.search);
   }
   function ask(it, userText) {
     if (it.cmd) return runCmd(it.cmd, '/' + it.cmd.c);
@@ -350,6 +359,7 @@
     }
     const toks = norm(text);
     const m = match(text);
+    if (toks.some(t => QA.insult.k.includes(t))) return reply(text, QA.insult.a, [], QA.insult.next);
     // Asks for specifics the site does not hold (dates, pay, reasons for leaving): invite them to ask directly.
     if (toks.some(t => QA.detail.k.includes(t))) return reply(text, QA.detail.a, QA.detail.links, QA.detail.next);
     if (m.length) return ask(m[0], text);
