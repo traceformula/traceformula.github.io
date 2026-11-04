@@ -46,7 +46,8 @@ I want to keep exploring distributed systems, AI and math. In my free time I lov
 - Knowledge Map (visualization): knowledge/
 - JPython (interpreter): jpython
 - Solar System (simulation): solar
-- Constellations (simulation): constellations
+- Solar System and Constellations (interactive 3D, real planet positions and all 88 constellations): constellations
+  Facts as JSON: constellations-data.json
 - Game of Life (simulation): gameoflife
 - LaTeX Visualizer (tool): latex
 - SRS (tool): srs
