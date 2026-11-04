@@ -45,10 +45,9 @@ I want to keep exploring distributed systems, AI and math. In my free time I lov
 - Cube Algebra (writing): cube.html
 - Knowledge Map (visualization): knowledge/
 - JPython (interpreter): jpython
-- Solar System (simulation): solar
 - Solar System and Constellations (interactive 3D, real planet positions and all 88 constellations): constellations
   Facts as JSON: constellations-data.json
-- Game of Life (simulation): gameoflife
+- Conway's Game of Life (interactive, with famous patterns, other rule sets and custom brushes): gameoflife
 - LaTeX Visualizer (tool): latex
 - SRS (tool): srs
 - Mai Hoa Dịch Số (curiosity): maihoa

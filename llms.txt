@@ -17,7 +17,7 @@ The same content as prose: about.md
 
 ## Visualizations and simulations
 - [Knowledge Map](knowledge/): force-directed graph of ~2,000 topics from books and courses. Data at knowledge/data.json
-- [Solar System](solar), [3D Solar System and Constellations](constellations) with facts in [JSON](constellations-data.json), [Game of Life](gameoflife)
+- [3D Solar System and Constellations](constellations) with facts in [JSON](constellations-data.json), [Game of Life](gameoflife)
 
 ## Elsewhere
 - GitHub: https://github.com/traceformula
