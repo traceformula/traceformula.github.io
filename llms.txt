@@ -1,0 +1,22 @@
+# Thanh Nguyen
+
+> Personal site of Thanh (Albert) Nguyen, software engineer. Distributed systems by day; browser tools, math write-ups and learning aids the rest of the time. Everything here is static HTML with no build step.
+
+The home page is an interactive portrait with a single chat line and no visible text. Everything it can say is in the question bank: qa.json
+The same content as prose: about.md
+
+## Writing
+- [Cube Algebra](cube_algebra_theory.md): a textbook-style development of the t-product algebra of 3-tensors, with a hardware thesis. Markdown with LaTeX math.
+
+## Tools
+- [Piano Practice Tools](piano/): ear trainer, note reader, fingering coach, play-by-ear with 290 public-domain tunes. Adaptive drills, offline capable.
+- [JPython](jpython): Python interpreter in JavaScript, runs in the browser.
+- [LaTeX Visualizer](latex): render LaTeX live, export PDF.
+- [SRS](srs): small spaced-repetition system.
+
+## Visualizations and simulations
+- [Knowledge Map](knowledge/): force-directed graph of ~2,000 topics from books and courses. Data at knowledge/data.json
+- [Solar System](solar), [Constellations](constellations), [Game of Life](gameoflife)
+
+## Elsewhere
+- GitHub: https://github.com/traceformula

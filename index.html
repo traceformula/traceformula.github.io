@@ -2,354 +2,351 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Code & Cosmos</title>
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-Q29PSXV9CQ"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-
-    gtag('config', 'G-Q29PSXV9CQ');
-  </script>
-  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Thanh Nguyen</title>
+  <meta name="description" content="Thanh (Albert) Nguyen, software engineer. An interactive portrait you can ask questions. Plain-text version at /about.md, question bank at /qa.json.">
+  <link rel="alternate" type="text/markdown" href="about.md" title="This site as Markdown">
+  <link rel="alternate" type="application/json" href="qa.json" title="Question bank behind the chat">
+  <link rel="icon" type="image/svg+xml" href="media/favicon.svg">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Thanh Nguyen">
+  <meta property="og:description" content="Ask me anything. Systems engineer; builds browser tools, math write-ups and learning aids.">
+  <meta name="twitter:card" content="summary">
+  <meta name="theme-color" content="#faf9f6" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#101114" media="(prefers-color-scheme: dark)">
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background: #f9f9f9;
-      color: #333;
+    :root {
+      --bg: #faf9f6; --ink: #1c1c1e; --muted: #7a7a80; --line: #e3e0d8;
+      --card: rgba(255,255,255,0.94); --shadow: 0 6px 24px rgba(0,0,0,0.08); --accent: #b4532a; --accent-soft: #f6e9e1;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
     }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --bg: #101114; --ink: #ece9e2; --muted: #8f8f98; --line: #2b2c32;
+              --card: rgba(24,25,30,0.94); --accent: #e8926a; --accent-soft: #2b1f19; --shadow: 0 6px 24px rgba(0,0,0,0.4); }
+    }
+    :root[data-theme="dark"] { --bg: #101114; --ink: #ece9e2; --muted: #8f8f98; --line: #2b2c32;
+              --card: rgba(24,25,30,0.94); --accent: #e8926a; --accent-soft: #2b1f19; --shadow: 0 6px 24px rgba(0,0,0,0.4); }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; overflow: hidden; background: var(--bg); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+    video { position: fixed; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+    canvas { position: fixed; inset: 0; display: block; cursor: crosshair; }
 
-    header {
-      background: #1e1e2f;
-      color: #fff;
-      padding: 20px;
-      text-align: center;
-    }
-    header h1 {
-      margin: 0;
-      font-size: 2.5em;
-    }
-    header p {
-      margin-top: 5px;
-      font-size: 1.2em;
-    }
-
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    .timeline {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 30px 0;
-    }
-    .timeline svg {
-      width: 100%;
-      max-width: 700px;
-      height: 100px;
-      display: block;
-      margin: 0 auto;
-    }
-
-    .axis line, .axis path {
-      stroke: #888;
-    }
-    .axis text {
-      font-size: 13px;
-      text-anchor: middle;
-      dominant-baseline: hanging;
-    }
-
-    .timeline-line {
-      stroke: #aaa;
-      stroke-width: 2px;
-    }
-
-    .event circle {
-      fill: steelblue;
-      r: 10;
-      transition: fill 0.3s, r 0.3s;
-      cursor: pointer;
-    }
-    .event circle:hover {
-      fill: orange;
-      r: 14;
-    }
-
-    .tooltip {
-      position: absolute;
-      background: white;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
+    #ui {
+      position: fixed; left: 50%; transform: translateX(-50%);
+      bottom: calc(env(safe-area-inset-bottom, 0px) + 28px);
+      width: min(640px, 92vw);
+      display: flex; flex-direction: column; gap: 10px;
       pointer-events: none;
-      font-size: 14px;
-      max-width: 250px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-      line-height: 1.4em;
-      z-index: 9999; /* keep tooltip above */
     }
+    #ui > * { pointer-events: auto; }
 
-    .projects {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 20px;
-      padding: 40px;
-      max-width: 1200px;
-      margin: auto;
-    }
+    #you { font-size: 0.9rem; color: var(--muted); align-self: flex-start; margin-left: 14px; padding: 4px 12px; border-radius: 999px; background: var(--card); border: 1px solid var(--line); opacity: 0; transition: opacity .4s; }
+    #you:empty { display: none; }
+    #you.show { opacity: 1; }
 
-    .card {
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      padding: 20px;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-      position: relative;
-      overflow: hidden;
+    #say {
+      font-size: clamp(1.05rem, 2.3vw, 1.3rem); line-height: 1.5;
+      padding: 16px 20px; border-radius: 18px;
+      background: var(--card); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--line); box-shadow: var(--shadow);
+      opacity: 0; transform: translateY(6px); transition: opacity .35s, transform .35s;
     }
+    #say.show { opacity: 1; transform: none; }
+    #say:empty { display: none; }
+    #say .caret { display: inline-block; width: 2px; height: 1em; background: var(--accent); vertical-align: -0.15em; margin-left: 2px; animation: blink 1s steps(2) infinite; }
+    @keyframes blink { to { visibility: hidden; } }
 
-    .card:hover {
-      transform: translateY(-8px) scale(1.02);
-      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    #chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 4px; }
+    #chips:empty { display: none; }
+    .chip {
+      font: inherit; font-size: 0.9rem; color: var(--ink); cursor: pointer;
+      padding: 7px 13px; border-radius: 999px; border: 1px solid var(--line);
+      background: var(--card); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      text-decoration: none; opacity: 0; animation: rise .4s forwards;
     }
+    .chip:hover { border-color: var(--accent); }
+    .chip.link { color: var(--accent); }
+    @keyframes rise { from { opacity: 0; transform: translateY(6px);} to { opacity: 1; transform: none; } }
 
-    .card-img {
-      width: 100%;
-      border-radius: 12px 12px 0 0;
-      object-fit: cover;
-      max-height: 180px;
-      margin-bottom: 15px;
+    #suggest {
+      list-style: none; margin: 0; padding: 6px; border-radius: 16px;
+      background: var(--card); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--line); box-shadow: var(--shadow);
     }
+    #suggest:empty { display: none; }
+    #suggest li { padding: 10px 14px; border-radius: 10px; cursor: pointer; font-size: 1rem; }
+    #suggest li.active, #suggest li:hover { background: var(--accent-soft); }
 
-    .card a img:hover {
-      opacity: 0.9;
-      transform: scale(1.02);
-      transition: transform 0.3s ease, opacity 0.3s ease;
+    form { position: relative; margin: 0; }
+    #q {
+      width: 100%; font: inherit; font-size: 1.2rem; color: var(--ink);
+      padding: 15px 20px; border-radius: 999px; outline: none;
+      border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      transition: border-color .2s, box-shadow .2s;
     }
+    #q:focus { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+    #hint {
+      position: absolute; left: 21px; top: 50%; transform: translateY(-50%);
+      color: var(--muted); font-size: 1.2rem; pointer-events: none;
+      transition: opacity .5s; white-space: nowrap; overflow: hidden; max-width: calc(100% - 42px); text-overflow: ellipsis;
+    }
+    #hint.hide { opacity: 0; }
 
-    .card h2 {
-      margin-top: 0;
-    }
-
-    .card a {
-      display: inline-block;
-      margin-top: 10px;
-      color: #0077cc;
-      text-decoration: none;
-      font-weight: bold;
-    }
-    .card a:hover {
-      text-decoration: underline;
-    }
-
-    footer {
-      text-align: center;
-      padding: 20px;
-      font-size: 0.9em;
-      background: #1e1e2f;
-      color: #fff;
-      margin-top: 40px;
-    }
+    noscript img { display: block; max-width: 100%; margin: 0 auto; }
+    noscript p { text-align: center; }
+    @media (prefers-reduced-motion: reduce) { .chip { animation: none; opacity: 1; } #say .caret { animation: none; } }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Code & Cosmos</h1>
-    <p>Thanh Nguyen • Software Engineer • Designing systems, building tools, and sharing knowledge</p>
-  </header>
+  <video id="src" muted playsinline autoplay preload="auto" aria-hidden="true" tabindex="-1">
+    <source src="media/hero.webm" type="video/webm">
+    <source src="media/hero.mp4" type="video/mp4">
+  </video>
+  <canvas id="stage" role="img" aria-label="Thanh Nguyen, drawn live as ink dots from a short video"></canvas>
 
-  <section class="timeline">
-    <svg></svg>
-    <div class="tooltip" style="opacity:0;"></div>
+  <div id="ui">
+    <div id="you"></div>
+    <div id="say" aria-live="polite"></div>
+    <div id="chips"></div>
+    <ul id="suggest" role="listbox"></ul>
+    <form id="ask" autocomplete="off">
+      <input id="q" type="text" aria-label="Ask me anything" autocomplete="off" autocapitalize="sentences" spellcheck="false" enterkeyhint="send">
+      <span id="hint">Ask me anything</span>
+    </form>
+  </div>
 
-    <script>
-      const svg = d3.select("svg")
-        .attr("width", "100%")
-        .attr("height", 100);
+  <noscript>
+    <img src="media/avatar.svg" alt="Thanh Nguyen, halftone portrait" width="960" height="720">
+    <p>Thanh (Albert) Nguyen, software engineer. <a href="about.md">Read about me</a> · <a href="https://github.com/traceformula">GitHub</a></p>
+  </noscript>
 
-      const width = 700;
-      const height = 100;
-      const tooltip = d3.select(".tooltip");
+<script>
+(() => {
+  // ---------- portrait ----------
+  const V = document.getElementById('src');
+  const C = document.getElementById('stage');
+  const X = C.getContext('2d');
+  const off = document.createElement('canvas');
+  const OX = off.getContext('2d', { willReadFrequently: true });
+  const poster = new Image(); poster.src = 'media/hero-poster.jpg';
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-      let data = [
-        {"year": "2021","title": "Software Development Engineer","organization": "Google","description": "Developed secure server-side services for YouTube & Google Search. Built platforms for compliance and transparency reporting in C++ and Python, and set engineering standards adopted across teams."},
-        {"year": "2018","title": "Software Development Engineer","organization": "Amazon","description": "Architected distributed services for DynamoDB replication logs. Implemented Just-in-Time Log Replica reducing recovery time from 15 to 1 minute, and led safe rollouts to new AWS regions."},
-        {"year": "2017","title": "Senior Software Engineer","organization": "Zocdoc","description": "Built ingestion services on AWS EMR/Spark integrating health records with DynamoDB/Redis. Re-engineered APIs in Scala/Node.js to cut latency by 40% and improve response times by 25%."},
-        {"year": "2016","title": "Software Engineer","organization": "Uber","description": "Developed a Go microservice aggregating trip, payment, and promotion data with 99.9% accuracy. Delivered ETL pipelines in Hive ensuring reliable datasets for pricing and payout systems."},
-        {"year": "2013","title": "Software Engineer","organization": "Anacle Systems","description": "Designed enterprise modules in C# and Android for finance, accounting, and asset management platforms serving corporate clients."},
-        {"year": "2012","title": "Founder & Engineer (Dashsell SaaS Platform)","organization": "Dashsell","description": "Developed a multilingual SaaS platform enabling instant mobile store creation. Recognized by Singapore’s Interactive Digital Media R&D program for cloud-based backend innovation."},
-        {"year": "2016","title": "M.S., Computer Science","organization": "Maharishi University of Management, USA","description": "Focused on advanced computer science concepts including distributed systems and cloud-native architectures."},
-        {"year": "2008","title": "B.S., Computer Science","organization": "Nanyang Technological University, Singapore","description": "Studied foundational computer science including algorithms, data structures, and systems programming."}
-      ];
+  let W, H, cols, rows, cell, lum, bg, ink, dark = false;
+  let mouth = { x: 0, y: 0 };
+  const mouse = { x: -1e4, y: -1e4, tx: -1e4, ty: -1e4, inside: false };
+  let ripples = [];
+  let speaking = false, flexing = false, primed = false;
 
-      // Parse years into Date objects
-      const parseYear = d3.timeParse("%Y");
-      data.forEach(d => { d.date = parseYear(d.year); });
+  function theme() {
+    const s = getComputedStyle(document.documentElement);
+    bg = s.getPropertyValue('--bg').trim(); ink = s.getPropertyValue('--ink').trim();
+    const forced = document.documentElement.dataset.theme;
+    dark = forced ? forced === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  function resize() {
+    W = innerWidth; H = innerHeight;
+    const dpr = Math.min(devicePixelRatio || 1, 1.5);
+    C.width = W * dpr; C.height = H * dpr; C.style.width = W + 'px'; C.style.height = H + 'px';
+    X.setTransform(dpr, 0, 0, dpr, 0, 0);
+    cell = Math.max(11, Math.min(24, Math.min(W, H) / 42));
+    cols = Math.ceil(W / cell); rows = Math.ceil(H / cell);
+    off.width = cols; off.height = rows;
+    lum = new Float32Array(cols * rows);
+  }
+  function sample() {
+    const src = V.readyState >= 2 ? V : (poster.complete && poster.naturalWidth ? poster : null);
+    if (!src) return false;
+    // Fit by height with a little zoom; the sides of the clip are plain wall.
+    const va = 4 / 3;
+    const dh = rows * 1.12, dw = dh * va, dx = (cols - dw) / 2, dy = -(dh - rows) * 0.35;
+    OX.fillStyle = '#fff'; OX.fillRect(0, 0, cols, rows);
+    OX.drawImage(src, dx, dy, dw, dh);
+    const d = OX.getImageData(0, 0, cols, rows).data;
+    // Light theme: ink dots sized by darkness. Dark theme: light dots sized by brightness.
+    // Soft fade at the clip's left and right edges so no rectangle shows.
+    const fade = new Float32Array(cols);
+    for (let c = 0; c < cols; c++) { const u = (c + 0.5 - dx) / dw; const e = Math.min(u, 1 - u) / 0.1; fade[c] = e <= 0 ? 0 : e >= 1 ? 1 : e * e * (3 - 2 * e); }
+    for (let r = 0, i = 0, j = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++, i++, j += 4) {
+        const l = (d[j] * 0.299 + d[j + 1] * 0.587 + d[j + 2] * 0.114) / 255;
+        const v = dark ? l : 1 - l;
+        lum[i] = Math.pow(v, dark ? 1.25 : 1.45) * fade[c];
+      }
+    }
+    mouth.x = (dx + 0.5 * dw) * cell; mouth.y = (dy + 0.62 * dh) * cell;
+    return true;
+  }
+  function ripple(x, y, amp, life) { if (!reduce) ripples.push({ x, y, amp, life, t: performance.now() }); }
 
-      // Time scale (proportional spacing)
-      const x = d3.scaleTime()
-        .domain(d3.extent(data, d => d.date))
-        .range([80, width - 80]);
+  let lastSample = 0;
+  function frame(t) {
+    requestAnimationFrame(frame);
+    if (t - lastSample > 33 || flexing) { sample(); lastSample = t; }
+    X.fillStyle = bg; X.fillRect(0, 0, W, H);
+    X.fillStyle = ink;
+    mouse.x += (mouse.tx - mouse.x) * 0.15; mouse.y += (mouse.ty - mouse.y) * 0.15;
+    const jit = (reduce || !speaking) ? 0 : 0.7;
+    const par = (!reduce && mouse.inside) ? 1 : 0;
+    const px = ((mouse.x / W) - 0.5) * 10 * par, py = ((mouse.y / H) - 0.5) * 10 * par;
+    const breath = reduce ? 1 : 1 + 0.004 * Math.sin(t / 1700);
+    const cx = W / 2, cy = H * 0.62;
+    const R = 90, R2 = R * R;
+    const uiTop = H * 0.55, fadeSpan = H - uiTop;
+    const live = [];
+    for (const rp of ripples) { const age = t - rp.t; if (age < rp.life) { rp.age = age; rp.rad = age * 0.4; rp.k = rp.amp * (1 - age / rp.life); live.push(rp); } }
+    ripples = live;
+    X.beginPath();
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        let d = lum[r * cols + c];
+        if (d < (dark ? 0.2 : 0.14)) continue;
+        let x = (c + 0.5) * cell, y = (r + 0.5) * cell;
+        x = cx + (x - cx) * breath + px; y = cy + (y - cy) * breath + py;
+        const ddx = x - mouse.x, ddy = y - mouse.y, dist2 = ddx * ddx + ddy * ddy;
+        if (dist2 < R2) { const dist = Math.sqrt(dist2) || 1, f = (R - dist) / R; x += ddx / dist * f * 10; y += ddy / dist * f * 10; }
+        let m = 1;
+        for (const rp of live) { const dr = Math.hypot(x - rp.x, y - rp.y) - rp.rad; if (dr > -44 && dr < 44) m += Math.cos(dr / 44 * 1.5708) * rp.k; }
+        if (jit && Math.abs(y - mouth.y) < 150 && Math.abs(x - mouth.x) < 150) { x += (Math.random() - 0.5) * jit * 2; y += (Math.random() - 0.5) * jit * 2; }
+        // Dots thin out toward the bottom where the conversation sits.
+        if (y > uiTop) m *= 1 - 0.65 * Math.min(1, (y - uiTop) / fadeSpan);
+        const rad = Math.max(0, cell * (dark ? 0.44 : 0.56) * Math.sqrt(d) * m);
+        X.moveTo(x + rad, y); X.arc(x, y, rad, 0, 6.2832);
+      }
+    }
+    X.fill();
+  }
 
-      const yPos = height * 0.65;
+  // Idle = paused on the neutral first frame. flex() plays the clip once.
+  function prime() {
+    if (primed) return; primed = true;
+    const p = V.play(); if (p && p.catch) p.catch(() => { primed = false; });
+  }
+  V.addEventListener('timeupdate', () => { if (!flexing && !V.paused) { V.pause(); V.currentTime = 0; } });
+  V.addEventListener('ended', () => { flexing = false; V.currentTime = 0; });
+  function flex() { flexing = true; V.currentTime = 0; const p = V.play(); if (p && p.catch) p.catch(() => { flexing = false; }); }
 
-      // Draw connecting line
-      svg.append("line")
-        .attr("class", "timeline-line")
-        .attr("x1", x(d3.min(data, d => d.date)))
-        .attr("x2", x(d3.max(data, d => d.date)))
-        .attr("y1", yPos)
-        .attr("y2", yPos);
+  addEventListener('resize', resize);
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', theme);
+  C.addEventListener('pointermove', e => { mouse.tx = e.clientX; mouse.ty = e.clientY; mouse.inside = true; });
+  C.addEventListener('pointerleave', () => { mouse.inside = false; mouse.tx = -1e4; mouse.ty = -1e4; });
+  C.addEventListener('pointerdown', e => { ripple(e.clientX, e.clientY, 0.6, 1200); prime(); if (!asked) ask(byId.hello, ''); });
+  addEventListener('pointerdown', prime, { once: true });
+  addEventListener('keydown', prime, { once: true });
 
-      // Axis
-      const xAxis = d3.axisBottom(x)
-        .ticks(d3.timeYear.every(1))
-        .tickFormat(d3.timeFormat("%Y"));
+  const th = new URLSearchParams(location.search).get('theme');
+  if (th === 'light' || th === 'dark') document.documentElement.dataset.theme = th;
+  theme(); resize(); requestAnimationFrame(frame);
 
-      svg.append("g")
-        .attr("class", "axis")
-        .attr("transform", `translate(0,${yPos})`)
-        .call(xAxis);
+  // ---------- conversation ----------
+  const $q = document.getElementById('q'), $hint = document.getElementById('hint'), $sug = document.getElementById('suggest');
+  const $say = document.getElementById('say'), $you = document.getElementById('you'), $chips = document.getElementById('chips');
+  const STOP = new Set('what are you your do does the a an is i me my of to and can could would tell on in for it that with be have has was were am some any please u ur'.split(' '));
+  let QA = null, byId = {}, asked = false, active = -1, list = [], typing = 0, idleTimer = 0;
 
-      // Events
-      const events = svg.selectAll(".event")
-        .data(data)
-        .enter().append("g")
-        .attr("class", "event")
-        .attr("transform", d => `translate(${x(d.date)},${yPos})`);
+  const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9+ ]/g, ' ').split(/\s+/).filter(w => w && !STOP.has(w));
 
-      events.append("circle").attr("r", 8);
+  function match(text) {
+    const toks = norm(text); if (!toks.length) return [];
+    const phrase = toks.join(' ');
+    return QA.items.map(it => {
+      let s = 0;
+      for (const t of toks) {
+        if (it.kw.has(t)) s += 3;
+        else if (t.length >= 3 && it.kwArr.some(k => k.startsWith(t))) s += 1.5;
+      }
+      if (it.qn.includes(phrase)) s += 2;
+      return { it, s };
+    }).filter(m => m.s > 0).sort((a, b) => b.s - a.s).map(m => m.it);
+  }
 
-      // Tooltip
-      events.on("mouseover", (event, d) => {
-        tooltip.transition().duration(200).style("opacity", 1);
-        tooltip.html(`
-          <strong>${d.year} – ${d.title}</strong><br/>
-          ${d.organization}<br/>
-          <em>${d.description}</em>
-        `)
-        .style("left", (event.pageX + 15) + "px")
-        .style("top", (event.pageY + 20) + "px");
-      }).on("mouseout", () => {
-        tooltip.transition().duration(200).style("opacity", 0);
-      });
-    </script>
-  </section>
+  function showSuggest(items) {
+    list = items.slice(0, 4); active = -1;
+    $sug.innerHTML = '';
+    list.forEach((it, i) => { const li = document.createElement('li'); li.textContent = it.q; li.setAttribute('role', 'option'); li.addEventListener('pointerdown', e => { e.preventDefault(); ask(it, ''); }); $sug.appendChild(li); });
+  }
+  function setActive(i) { active = i; [...$sug.children].forEach((li, j) => li.classList.toggle('active', j === i)); }
+  function starters() { return QA.starters.map(id => byId[id]); }
 
-  <section class="projects">
-    <!-- Live Projects with Thumbnails -->
-    <div class="card">
-      <a href="knowledge/" target="_blank">
-        <img src="images/knowledge.png" alt="Knowledge Map" class="card-img">
-      </a>
-      <h2>🧠 Knowledge Map</h2>
-      <p>
-        An interactive force-directed graph that visualizes some of the books, courses, and topics 
-        as connected nodes that I skimmed through. Users can explore clusters by domain and search through the 
-        knowledge network dynamically.
-      </p>
-      <a href="knowledge/" target="_blank">View Demo</a> |
-      <a href="https://github.com/traceformula/traceformula.github.io" target="_blank">Source Code</a>
-    </div>
+  function chips(links, next) {
+    $chips.innerHTML = '';
+    let delay = 0;
+    (links || []).forEach(l => { const a = document.createElement('a'); a.className = 'chip link'; a.href = l.u; a.textContent = l.t; a.style.animationDelay = (delay += 60) + 'ms'; $chips.appendChild(a); });
+    (next || []).forEach(id => { const it = byId[id]; if (!it) return; const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = it.q; b.style.animationDelay = (delay += 60) + 'ms'; b.addEventListener('click', () => ask(it, '')); $chips.appendChild(b); });
+  }
 
-    <div class="card">
-      <a href="/constellations" target="_blank">
-        <img src="images/constellations.png" alt="Constellations" class="card-img">
-      </a>
-      <h2>✨ Constellations</h2>
-      <p>
-        An interactive starfield visualization that draws constellations dynamically 
-        using JavaScript and Canvas. Explore celestial patterns and enjoy a 
-        real-time stargazing experience in your browser.
-      </p>
-      <a href="/constellations" target="_blank">View Demo</a> |
-      <a href="https://github.com/traceformula/traceformula.github.io" target="_blank">Source Code</a>
-    </div>
+  function say(text, done) {
+    clearTimeout(typing);
+    $say.textContent = ''; $say.classList.add('show');
+    const caret = document.createElement('span'); caret.className = 'caret';
+    const node = document.createTextNode(''); $say.append(node, caret);
+    speaking = true; let i = 0, lastRip = 0;
+    const step = () => {
+      node.data = text.slice(0, ++i);
+      const ch = text[i - 1];
+      const now = performance.now();
+      if (now - lastRip > 110) { ripple(mouth.x, mouth.y, 0.3, 800); lastRip = now; }
+      if (i < text.length) typing = setTimeout(step, reduce ? 0 : (/[.,;:!?]/.test(ch) ? 190 : 22));
+      else { speaking = false; caret.remove(); done && done(); }
+    };
+    step();
+  }
 
-    <div class="card">
-      <a href="solar" target="_blank">
-        <img src="images/solar.png" alt="Space Simulation" class="card-img">
-      </a>
-      <h2>🌌 Solar System Simulation</h2>
-      <p>An interactive solar system built with JavaScript and HTML5 Canvas, featuring planets, tilted elliptical orbits, and comets.</p>
-      <a href="solar" target="_blank">View Demo</a> |
-      <a href="https://github.com/traceformula/traceformula.github.io" target="_blank">Source Code</a>
-    </div>
+  function ask(it, userText) {
+    asked = true; clearTimeout(idleTimer);
+    $you.textContent = userText || it.q; $you.classList.add('show');
+    $q.value = ''; $hint.classList.remove('hide'); showSuggest([]); $chips.innerHTML = '';
+    if (innerWidth < 700) $q.blur();
+    if (it.flex) flex();
+    history.replaceState(null, '', '#' + it.id);
+    say(it.a, () => chips(it.links, it.next));
+  }
+  function askText(text) {
+    const m = match(text);
+    if (m.length) return ask(m[0], text);
+    asked = true; $you.textContent = text; $you.classList.add('show'); $q.value = ''; showSuggest([]); $chips.innerHTML = '';
+    say(QA.fallback, () => chips([], QA.starters));
+  }
 
-    <div class="card">
-      <a href="srs" target="_blank">
-        <img src="images/srs.png" alt="SRS Tool" class="card-img">
-      </a>
-      <h2>📚 SRS Tool</h2>
-      <p>A simplified spaced repetition system inspired by Anki, helping users memorize information efficiently. Uses <strong>Firebase</strong> as the backend for storing user data and progress.</p>
-      <a href="srs" target="_blank">View Demo</a> |
-      <a href="https://github.com/traceformula/srs" target="_blank">Source Code</a>
-    </div>
+  // hints cycle while the field is empty and unfocused
+  const HINTS = ['Ask me anything', 'Ask what I am working on', 'Ask what I can build', 'Ask about the piano tools', 'Say hello', 'Ask if I am real'];
+  let hi = 0;
+  setInterval(() => { if ($q.value || document.activeElement === $q) return; $hint.classList.add('hide'); setTimeout(() => { hi = (hi + 1) % HINTS.length; $hint.textContent = HINTS[hi]; $hint.classList.remove('hide'); }, 500); }, 4200);
 
-    <div class="card">
-      <a href="jpython" target="_blank">
-        <img src="images/jpython.png" alt="JPython" class="card-img">
-      </a>
-      <h2>🐍 JPython</h2>
-      <p>A Python interpreter built in JavaScript that runs directly in your browser, allowing you to experiment with Python code without installation.</p>
-      <a href="jpython" target="_blank">View Demo</a> |
-      <a href="https://github.com/traceformula/traceformula.github.io" target="_blank">Source Code</a>
-    </div>
+  $q.addEventListener('focus', () => { if (!QA) return; $hint.classList.add('hide'); if (!asked) { clearTimeout(idleTimer); $chips.innerHTML = ''; } if (!$q.value) showSuggest(starters()); });
+  $q.addEventListener('blur', () => { setTimeout(() => { if (document.activeElement !== $q) { showSuggest([]); if (!$q.value) $hint.classList.remove('hide'); } }, 150); });
+  $q.addEventListener('input', () => {
+    if (!QA) return;
+    $hint.classList.toggle('hide', true);
+    const v = $q.value.trim();
+    if (!v) { showSuggest(starters()); return; }
+    const m = match(v);
+    showSuggest(m.length ? m : starters());
+    if (v.length % 3 === 0) ripple(mouth.x, mouth.y, 0.25, 600);
+  });
+  $q.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown' && list.length) { e.preventDefault(); setActive((active + 1) % list.length); }
+    else if (e.key === 'ArrowUp' && list.length) { e.preventDefault(); setActive((active - 1 + list.length) % list.length); }
+    else if (e.key === 'Escape') { if ($q.value) { $q.value = ''; showSuggest(starters()); } else $q.blur(); }
+  });
+  document.getElementById('ask').addEventListener('submit', e => {
+    e.preventDefault(); if (!QA) return;
+    const v = $q.value.trim();
+    if (active >= 0 && list[active]) return ask(list[active], v);
+    if (!v) return ask(byId.hello, '');
+    askText(v);
+  });
+  addEventListener('keydown', e => { if (e.key === '/' && document.activeElement !== $q) { e.preventDefault(); $q.focus(); } });
 
-    <div class="card">
-      <a href="gameoflife" target="_blank">
-        <img src="images/gameoflife.png" alt="Game of Life" class="card-img">
-      </a>
-      <h2>🟩 Game of Life</h2>
-      <p>A browser-based implementation of Conway's Game of Life, demonstrating cellular automata rules, dynamic patterns, and algorithmic thinking with JavaScript.</p>
-      <a href="gameoflife" target="_blank">View Demo</a> |
-      <a href="https://github.com/traceformula/traceformula.github.io" target="_blank">Source Code</a>
-    </div>
-
-    <div class="card">
-      <a href="latex" target="_blank">
-        <img src="images/latex.png" alt="LaTeX Visualizer" class="card-img">
-      </a>
-      <h2>📝 LaTeX Visualizer</h2>
-      <p>A simple LaTeX tool that allows users to write LaTeX code, instantly visualize the rendered output in the browser, and download it as a PDF.</p>
-      <a href="latex" target="_blank">View Demo</a> |
-      <a href="https://github.com/traceformula/traceformula.github.io" target="_blank">Source Code</a>
-    </div>
-
-    <div class="card">
-      <a>
-        <img src="images/agent.png" alt="JPython" class="card-img">
-      </a>
-      <h2>🤖 Generative AI Agent (Coming Soon)</h2></h2>
-      <p>A project focused on building an intelligent generative AI agent 
-      with a humanoid-style interface. The goal is to explore natural interaction, 
-      multi-modal reasoning, and lifelike user experiences through advanced ML models.</p>
-      <a href="#">Demo</a> | <a href="#">Source Code</a>
-    </div>
-  </section>
-
-  <footer>
-    © 2025 Thanh Nguyen — <a href="https://github.com/traceformula" style="color:#fff;">GitHub</a> 
-    | <a href="mailto:thanhtiennguyen2810@gmail.com" style="color:#fff;">Contact</a>
-  </footer>
-
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      document.querySelectorAll('a').forEach(function(link) {
-        link.addEventListener('click', function() {
-          gtag('event', 'link_click', {
-            link_url: link.href,
-            link_text: link.innerText
-          });
-        });
-      });
-    });
-  </script>
+  fetch('qa.json').then(r => r.json()).then(d => {
+    QA = d;
+    for (const it of QA.items) { it.kwArr = [...new Set([...it.k, ...norm(it.q)].map(k => norm(k).join(' ')).filter(Boolean))]; it.kw = new Set(it.kwArr); it.qn = norm(it.q).join(' '); byId[it.id] = it; }
+    const h = location.hash.slice(1);
+    if (h && byId[h]) setTimeout(() => ask(byId[h], ''), 600);
+    else idleTimer = setTimeout(() => { if (!asked) chips([], QA.starters); }, 7000);
+  });
+})();
+</script>
 </body>
 </html>
