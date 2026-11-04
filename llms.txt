@@ -9,6 +9,7 @@ The same content as prose: about.md
 - [Cube Algebra](cube_algebra_theory.md): a textbook-style development of the t-product algebra of 3-tensors, with a hardware thesis. Markdown with LaTeX math.
 
 ## Tools
+- [Sophia & Ethan's Math Quest](https://sophiaethan.fun): free math game for kids aged 10 to 15+, in Vietnamese and English. 1,677 problems, including 600 original contest-style puzzles (Kangaroo, MATHCOUNTS, AMC 8/10/12, AIME and olympiad style).
 - [Piano Practice Tools](piano/): ear trainer, note reader, fingering coach, play-by-ear with 290 public-domain tunes. Adaptive drills, offline capable.
 - [JPython](jpython): Python interpreter in JavaScript, runs in the browser.
 - [LaTeX Visualizer](latex): render LaTeX live, export PDF.

@@ -16,21 +16,21 @@
   <meta name="theme-color" content="#101114" media="(prefers-color-scheme: dark)">
   <style>
     :root {
-      --bg: #faf9f6; --ink: #1c1c1e; --muted: #7a7a80; --line: #e3e0d8;
-      --card: rgba(255,255,255,0.94); --shadow: 0 6px 24px rgba(0,0,0,0.08); --accent: #b4532a; --accent-soft: #f6e9e1;
+      --bg: #faf9f6; --ink: #1c1c1e; --muted: #66666c; --line: #e3e0d8; --edge: #8c8c84;
+      --card: rgba(255,255,255,0.94); --shadow: 0 6px 24px rgba(0,0,0,0.08); --accent: #a84a24; --accent-soft: #f6e9e1;
       --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
     }
     @media (prefers-color-scheme: dark) {
-      :root:not([data-theme="light"]) { --bg: #101114; --ink: #ece9e2; --muted: #8f8f98; --line: #2b2c32;
+      :root:not([data-theme="light"]) { --bg: #101114; --ink: #ece9e2; --muted: #a3a3ac; --line: #2b2c32; --edge: #6e6f79;
               --card: rgba(24,25,30,0.94); --accent: #e8926a; --accent-soft: #2b1f19; --shadow: 0 6px 24px rgba(0,0,0,0.4); }
     }
-    :root[data-theme="dark"] { --bg: #101114; --ink: #ece9e2; --muted: #8f8f98; --line: #2b2c32;
+    :root[data-theme="dark"] { --bg: #101114; --ink: #ece9e2; --muted: #a3a3ac; --line: #2b2c32; --edge: #6e6f79;
               --card: rgba(24,25,30,0.94); --accent: #e8926a; --accent-soft: #2b1f19; --shadow: 0 6px 24px rgba(0,0,0,0.4); }
     * { box-sizing: border-box; }
     html, body { height: 100%; }
     body { margin: 0; overflow: hidden; background: var(--bg); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
     video { position: fixed; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-    canvas { position: fixed; inset: 0; display: block; cursor: crosshair; }
+    canvas { position: fixed; inset: 0; display: block; cursor: default; }
 
     #ui {
       position: fixed; left: 50%; transform: translateX(-50%);
@@ -39,9 +39,24 @@
       display: flex; flex-direction: column; gap: 10px;
       pointer-events: none;
     }
-    #ui > * { pointer-events: auto; }
+    #ui > * { pointer-events: auto; flex-shrink: 0; }
+    /* Fades the portrait out behind the conversation, whatever height the panel has. */
+    #ui::before {
+      content: ""; position: absolute; z-index: -1; pointer-events: none;
+      left: 50%; width: 200vw; transform: translateX(-50%);
+      top: -72px; bottom: calc(-28px - env(safe-area-inset-bottom, 0px));
+      background: linear-gradient(to bottom, transparent, var(--bg) 72px);
+    }
+    #ui { max-height: calc(100vh - env(safe-area-inset-bottom, 0px) - 40px); max-height: calc(100dvh - env(safe-area-inset-bottom, 0px) - 40px); }
+    #say { flex: 0 1 auto; min-height: 72px; overflow-y: auto; position: relative; }
+    #chips { flex: 0 1 auto; min-height: 40px; max-height: clamp(84px, 24vh, 200px); overflow-y: auto; }
+    #chips.wait { visibility: hidden; }
+    #chips.wait .chip { animation: none; }
+    #ui:has(#suggest:not(:empty)) #chips { display: none; }
+    .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    @media (pointer: coarse) { .chip { padding: 12px 14px; } }
 
-    #you { font-size: 0.9rem; color: var(--muted); align-self: flex-start; margin-left: 14px; padding: 4px 12px; border-radius: 999px; background: var(--card); border: 1px solid var(--line); opacity: 0; transition: opacity .4s; }
+    #you { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); font-size: 0.9rem; color: var(--muted); align-self: flex-start; margin-left: 14px; padding: 4px 12px; border-radius: 999px; background: var(--card); border: 1px solid var(--line); opacity: 0; transition: opacity .4s; }
     #you:empty { display: none; }
     #you.show { opacity: 1; }
 
@@ -54,10 +69,10 @@
     }
     #say.show { opacity: 1; transform: none; }
     #say:empty { display: none; }
-    #say .caret { display: inline-block; width: 2px; height: 1em; background: var(--accent); vertical-align: -0.15em; margin-left: 2px; animation: blink 1s steps(2) infinite; }
+    #say .caret { display: inline-block; width: 2px; height: 1em; background: var(--accent); vertical-align: -0.15em; margin-left: 2px; margin-right: -4px; animation: blink 1s steps(2) infinite; }
     @keyframes blink { to { visibility: hidden; } }
 
-    #chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 4px; }
+    #chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 4px 2px; }
     #chips:empty { display: none; }
     .chip {
       font: inherit; font-size: 0.9rem; color: var(--ink); cursor: pointer;
@@ -82,7 +97,7 @@
     #q {
       width: 100%; font: inherit; font-size: 1.2rem; color: var(--ink);
       padding: 15px 20px; border-radius: 999px; outline: none;
-      border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow);
+      border: 1px solid var(--edge); background: var(--card); box-shadow: var(--shadow);
       backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
       transition: border-color .2s, box-shadow .2s;
     }
@@ -96,7 +111,7 @@
 
     noscript img { display: block; max-width: 100%; margin: 0 auto; }
     noscript p { text-align: center; }
-    @media (prefers-reduced-motion: reduce) { .chip { animation: none; opacity: 1; } #say .caret { animation: none; } }
+    @media (prefers-reduced-motion: reduce) { .chip { animation: none; opacity: 1; } #say .caret { animation: none; } #say, #you, #hint { transition: none; } }
   </style>
 </head>
 <body>
@@ -108,7 +123,8 @@
 
   <div id="ui">
     <div id="you"></div>
-    <div id="say" aria-live="polite"></div>
+    <div id="say"></div>
+    <div id="sr" class="sr" aria-live="polite"></div>
     <div id="chips"></div>
     <ul id="suggest" role="listbox"></ul>
     <form id="ask" autocomplete="off">
@@ -164,15 +180,14 @@
     OX.fillStyle = '#fff'; OX.fillRect(0, 0, cols, rows);
     OX.drawImage(src, dx, dy, dw, dh);
     const d = OX.getImageData(0, 0, cols, rows).data;
-    // Light theme: ink dots sized by darkness. Dark theme: light dots sized by brightness.
+    // Dots are sized by darkness in both themes, so a pale wall stays empty and only the person is drawn.
     // Soft fade at the clip's left and right edges so no rectangle shows.
     const fade = new Float32Array(cols);
     for (let c = 0; c < cols; c++) { const u = (c + 0.5 - dx) / dw; const e = Math.min(u, 1 - u) / 0.1; fade[c] = e <= 0 ? 0 : e >= 1 ? 1 : e * e * (3 - 2 * e); }
     for (let r = 0, i = 0, j = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++, i++, j += 4) {
         const l = (d[j] * 0.299 + d[j + 1] * 0.587 + d[j + 2] * 0.114) / 255;
-        const v = dark ? l : 1 - l;
-        lum[i] = Math.pow(v, dark ? 1.25 : 1.45) * fade[c];
+        lum[i] = Math.pow(1 - l, 1.45) * fade[c];
       }
     }
     mouth.x = (dx + 0.5 * dw) * cell; mouth.y = (dy + 0.62 * dh) * cell;
@@ -187,9 +202,8 @@
     X.fillStyle = bg; X.fillRect(0, 0, W, H);
     X.fillStyle = ink;
     mouse.x += (mouse.tx - mouse.x) * 0.15; mouse.y += (mouse.ty - mouse.y) * 0.15;
-    const jit = (reduce || !speaking) ? 0 : 0.7;
     const par = (!reduce && mouse.inside) ? 1 : 0;
-    const px = ((mouse.x / W) - 0.5) * 10 * par, py = ((mouse.y / H) - 0.5) * 10 * par;
+    const px = ((mouse.x / W) - 0.5) * 3 * par, py = ((mouse.y / H) - 0.5) * 3 * par;
     const breath = reduce ? 1 : 1 + 0.004 * Math.sin(t / 1700);
     const cx = W / 2, cy = H * 0.62;
     const R = 90, R2 = R * R;
@@ -201,17 +215,16 @@
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         let d = lum[r * cols + c];
-        if (d < (dark ? 0.2 : 0.14)) continue;
+        if (d < 0.14) continue;
         let x = (c + 0.5) * cell, y = (r + 0.5) * cell;
         x = cx + (x - cx) * breath + px; y = cy + (y - cy) * breath + py;
         const ddx = x - mouse.x, ddy = y - mouse.y, dist2 = ddx * ddx + ddy * ddy;
-        if (dist2 < R2) { const dist = Math.sqrt(dist2) || 1, f = (R - dist) / R; x += ddx / dist * f * 10; y += ddy / dist * f * 10; }
+        if (!reduce && dist2 < R2) { const dist = Math.sqrt(dist2) || 1, f = (R - dist) / R; x += ddx / dist * f * 10; y += ddy / dist * f * 10; }
         let m = 1;
         for (const rp of live) { const dr = Math.hypot(x - rp.x, y - rp.y) - rp.rad; if (dr > -44 && dr < 44) m += Math.cos(dr / 44 * 1.5708) * rp.k; }
-        if (jit && Math.abs(y - mouth.y) < 150 && Math.abs(x - mouth.x) < 150) { x += (Math.random() - 0.5) * jit * 2; y += (Math.random() - 0.5) * jit * 2; }
         // Dots thin out toward the bottom where the conversation sits.
         if (y > uiTop) m *= 1 - 0.65 * Math.min(1, (y - uiTop) / fadeSpan);
-        const rad = Math.max(0, cell * (dark ? 0.44 : 0.56) * Math.sqrt(d) * m);
+        const rad = Math.max(0, cell * (dark ? 0.46 : 0.56) * Math.sqrt(d) * m);
         X.moveTo(x + rad, y); X.arc(x, y, rad, 0, 6.2832);
       }
     }
@@ -278,44 +291,57 @@
 
   function say(text, done) {
     clearTimeout(typing);
-    $say.textContent = ''; $say.classList.add('show');
-    const caret = document.createElement('span'); caret.className = 'caret';
-    const node = document.createTextNode(''); $say.append(node, caret);
+    $say.textContent = ''; $say.classList.add('show'); $say.scrollTop = 0;
+    document.getElementById('sr').textContent = text;
+    // The untyped text is laid out invisibly, so the card keeps one size while it fills.
+    const shown = document.createElement('span'); shown.setAttribute('aria-hidden', 'true');
+    const node = document.createTextNode(''), caret = document.createElement('span'), rest = document.createElement('span');
+    caret.className = 'caret'; rest.style.visibility = 'hidden'; rest.textContent = text;
+    shown.append(node, caret, rest); $say.append(shown);
     speaking = true; let i = 0, lastRip = 0;
+    const finish = () => {
+      clearTimeout(typing); $say.onclick = null;
+      node.data = text; caret.remove(); rest.remove(); speaking = false; done && done();
+    };
+    if (reduce) return finish();
+    $say.onclick = finish;
     const step = () => {
-      node.data = text.slice(0, ++i);
-      const ch = text[i - 1];
+      node.data = text.slice(0, ++i); rest.textContent = text.slice(i);
+      const edge = caret.offsetTop + caret.offsetHeight + 8;
+      if (edge > $say.scrollTop + $say.clientHeight) $say.scrollTop = edge - $say.clientHeight;
       const now = performance.now();
-      if (now - lastRip > 110) { ripple(mouth.x, mouth.y, 0.3, 800); lastRip = now; }
-      if (i < text.length) typing = setTimeout(step, reduce ? 0 : (/[.,;:!?]/.test(ch) ? 190 : 22));
-      else { speaking = false; caret.remove(); done && done(); }
+      if (now - lastRip > 400) { ripple(mouth.x, mouth.y, 0.12, 800); lastRip = now; }
+      if (i < text.length) typing = setTimeout(step, /[.,;:!?]/.test(text[i - 1]) ? 70 : 12);
+      else finish();
     };
     step();
   }
 
   function ask(it, userText) {
-    asked = true; clearTimeout(idleTimer);
+    asked = true; clearTimeout(idleTimer); $hint.textContent = HINTS[0];
     $you.textContent = userText || it.q; $you.classList.add('show');
     $q.value = ''; $hint.classList.remove('hide'); showSuggest([]); $chips.innerHTML = '';
     if (innerWidth < 700) $q.blur();
     if (it.flex) flex();
     history.replaceState(null, '', '#' + it.id);
-    say(it.a, () => chips(it.links, it.next));
+    chips(it.links, it.next); $chips.classList.add('wait');
+    say(it.a, () => $chips.classList.remove('wait'));
   }
   function askText(text) {
     const m = match(text);
     if (m.length) return ask(m[0], text);
-    asked = true; $you.textContent = text; $you.classList.add('show'); $q.value = ''; showSuggest([]); $chips.innerHTML = '';
-    say(QA.fallback, () => chips([], QA.starters));
+    asked = true; clearTimeout(idleTimer); $hint.textContent = HINTS[0]; $you.textContent = text; $you.classList.add('show'); $q.value = ''; showSuggest([]); $chips.innerHTML = '';
+    chips([], QA.starters); $chips.classList.add('wait');
+    say(QA.fallback, () => $chips.classList.remove('wait'));
   }
 
-  // hints cycle while the field is empty and unfocused
+  // hints cycle only until the first question, while the field is empty and unfocused
   const HINTS = ['Ask me anything', 'Ask what I am working on', 'Ask what I can build', 'Ask about the piano tools', 'Say hello', 'Ask if I am real'];
   let hi = 0;
-  setInterval(() => { if ($q.value || document.activeElement === $q) return; $hint.classList.add('hide'); setTimeout(() => { hi = (hi + 1) % HINTS.length; $hint.textContent = HINTS[hi]; $hint.classList.remove('hide'); }, 500); }, 4200);
+  setInterval(() => { if (asked || reduce || $q.value || document.activeElement === $q) return; $hint.classList.add('hide'); setTimeout(() => { hi = (hi + 1) % HINTS.length; $hint.textContent = HINTS[hi]; $hint.classList.remove('hide'); }, 500); }, 4200);
 
   $q.addEventListener('focus', () => { if (!QA) return; $hint.classList.add('hide'); if (!asked) { clearTimeout(idleTimer); $chips.innerHTML = ''; } if (!$q.value) showSuggest(starters()); });
-  $q.addEventListener('blur', () => { setTimeout(() => { if (document.activeElement !== $q) { showSuggest([]); if (!$q.value) $hint.classList.remove('hide'); } }, 150); });
+  $q.addEventListener('blur', () => { setTimeout(() => { if (document.activeElement !== $q) { showSuggest([]); if (!$q.value) { $hint.classList.remove('hide'); if (!asked && QA) chips([], QA.starters); } } }, 150); });
   $q.addEventListener('input', () => {
     if (!QA) return;
     $hint.classList.toggle('hide', true);
@@ -344,7 +370,7 @@
     for (const it of QA.items) { it.kwArr = [...new Set([...it.k, ...norm(it.q)].map(k => norm(k).join(' ')).filter(Boolean))]; it.kw = new Set(it.kwArr); it.qn = norm(it.q).join(' '); byId[it.id] = it; }
     const h = location.hash.slice(1);
     if (h && byId[h]) setTimeout(() => ask(byId[h], ''), 600);
-    else idleTimer = setTimeout(() => { if (!asked) chips([], QA.starters); }, 7000);
+    else idleTimer = setTimeout(() => { if (!asked && document.activeElement !== $q) chips([], QA.starters); }, 1200);
   });
 })();
 </script>
