@@ -17,15 +17,15 @@
   <style>
     :root {
       --bg: #faf9f6; --ink: #1c1c1e; --muted: #66666c; --line: #e3e0d8; --edge: #8c8c84;
-      --card: rgba(255,255,255,0.94); --shadow: 0 6px 24px rgba(0,0,0,0.08); --accent: #a84a24; --accent-soft: #f6e9e1;
+      --card: rgba(255,255,255,0.94); --solid: #fff; --shadow: 0 6px 24px rgba(0,0,0,0.08); --accent: #a84a24; --accent-soft: #f6e9e1;
       --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
     }
     @media (prefers-color-scheme: dark) {
       :root:not([data-theme="light"]) { --bg: #101114; --ink: #ece9e2; --muted: #a3a3ac; --line: #2b2c32; --edge: #6e6f79;
-              --card: rgba(24,25,30,0.94); --accent: #e8926a; --accent-soft: #2b1f19; --shadow: 0 6px 24px rgba(0,0,0,0.4); }
+              --card: rgba(24,25,30,0.94); --solid: #18191e; --accent: #e8926a; --accent-soft: #2b1f19; --shadow: 0 6px 24px rgba(0,0,0,0.4); }
     }
     :root[data-theme="dark"] { --bg: #101114; --ink: #ece9e2; --muted: #a3a3ac; --line: #2b2c32; --edge: #6e6f79;
-              --card: rgba(24,25,30,0.94); --accent: #e8926a; --accent-soft: #2b1f19; --shadow: 0 6px 24px rgba(0,0,0,0.4); }
+              --card: rgba(24,25,30,0.94); --solid: #18191e; --accent: #e8926a; --accent-soft: #2b1f19; --shadow: 0 6px 24px rgba(0,0,0,0.4); }
     * { box-sizing: border-box; }
     html, body { height: 100%; }
     body { margin: 0; overflow: hidden; background: var(--bg); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
@@ -39,7 +39,9 @@
       display: flex; flex-direction: column; gap: 10px;
       pointer-events: none;
     }
-    #ui > * { pointer-events: auto; flex-shrink: 0; }
+    #ui > *, #talk > * { pointer-events: auto; flex-shrink: 0; }
+    #talk { display: contents; }
+    #tail { display: none; pointer-events: none; }
     /* Fades the portrait out behind the conversation, whatever height the panel has. */
     #ui::before {
       content: ""; position: absolute; z-index: -1; pointer-events: none;
@@ -111,9 +113,20 @@
     }
     #hint.hide { opacity: 0; }
 
+    /* Wide screens: the reply moves beside the head, with a tail reaching to the mouth. */
+    @media (min-width: 900px) and (min-aspect-ratio: 5/4) and (min-height: 420px) {
+      #ui { left: 50%; transform: none; margin-left: calc(min(640px, 92vw) / -2); }
+      #talk.on { display: flex; flex-direction: column; gap: 10px; position: fixed; z-index: 1; }
+      #talk.on #say { transform: none; background: var(--solid); backdrop-filter: none; -webkit-backdrop-filter: none; font-size: clamp(1.02rem, 1.5vw, 1.2rem); }
+      #talk.on #you { align-self: flex-start; }
+      #tail { display: block; position: fixed; inset: 0; width: 100%; height: 100%; z-index: 2; overflow: visible; opacity: 0; transition: opacity .35s; }
+      #tail.show { opacity: 1; }
+      #tail path { fill: var(--solid); stroke: var(--line); stroke-width: 1; stroke-linejoin: round; }
+    }
+
     noscript img { display: block; max-width: 100%; margin: 0 auto; }
     noscript p { text-align: center; }
-    @media (prefers-reduced-motion: reduce) { .chip { animation: none; opacity: 1; } #say .caret { animation: none; } #say, #you, #hint { transition: none; } }
+    @media (prefers-reduced-motion: reduce) { .chip { animation: none; opacity: 1; } #say .caret { animation: none; } #say, #you, #hint, #tail { transition: none; } }
   </style>
 </head>
 <body>
@@ -124,14 +137,17 @@
   <canvas id="stage" role="img" aria-label="Thanh Nguyen, drawn live as ink dots from a short video"></canvas>
 
   <div id="ui">
-    <div id="you"></div>
-    <div id="say" tabindex="-1"></div>
-    <div id="sr" class="sr" aria-live="polite"></div>
-    <div id="chips"></div>
+    <div id="talk">
+      <div id="you"></div>
+      <div id="say" tabindex="-1"></div>
+      <div id="sr" class="sr" aria-live="polite"></div>
+      <div id="chips"></div>
+    </div>
+    <svg id="tail" aria-hidden="true"><path/></svg>
     <ul id="suggest" role="listbox"></ul>
     <form id="ask" autocomplete="off">
       <input id="q" type="text" aria-label="Ask Thanh anything" autocomplete="off" autocapitalize="sentences" spellcheck="false" enterkeyhint="send">
-      <span id="hint">Ask Thanh anything</span>
+      <span id="hint">Ask Thanh, or type /help</span>
     </form>
   </div>
 
@@ -152,7 +168,8 @@
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   let W, H, cols, rows, cell, lum, bg, ink, dark = false;
-  let mouth = { x: 0, y: 0 };
+  let mouth = { x: 0, y: 0 }, faceLeft = 0, faceRight = 0;
+  let panX = 0, panTo = 0, fadeTop = 0.55, fadeTo = 0.55;
   const mouse = { x: -1e4, y: -1e4, tx: -1e4, ty: -1e4, inside: false };
   let ripples = [];
   let speaking = false, flexing = false, primed = false;
@@ -172,6 +189,10 @@
     cols = Math.ceil(W / cell); rows = Math.ceil(H / cell);
     off.width = cols; off.height = rows;
     lum = new Float32Array(cols * rows);
+    // Where the face sits on screen, as fractions of the clip's first frame.
+    const dh = rows * 1.12, dw = dh * 4 / 3, dx = (cols - dw) / 2, dy = -(dh - rows) * 0.35;
+    mouth.x = (dx + 0.54 * dw) * cell; mouth.y = (dy + 0.54 * dh) * cell;
+    faceLeft = (dx + 0.38 * dw) * cell; faceRight = (dx + 0.72 * dw) * cell;
   }
   function sample() {
     const src = V.readyState >= 2 ? V : (poster.complete && poster.naturalWidth ? poster : null);
@@ -192,7 +213,6 @@
         lum[i] = Math.pow(1 - l, 1.45) * fade[c];
       }
     }
-    mouth.x = (dx + 0.5 * dw) * cell; mouth.y = (dy + 0.62 * dh) * cell;
     return true;
   }
   function ripple(x, y, amp, life) { if (!reduce) ripples.push({ x, y, amp, life, t: performance.now() }); }
@@ -201,6 +221,12 @@
   function frame(t) {
     requestAnimationFrame(frame);
     if (reduce && !flexing && !dirty) return;
+    if (panX !== panTo || fadeTop !== fadeTo) {
+      panX += (panTo - panX) * 0.09; fadeTop += (fadeTo - fadeTop) * 0.09;
+      if (reduce || Math.abs(panTo - panX) < 0.5) panX = panTo;
+      if (reduce || Math.abs(fadeTo - fadeTop) < 0.002) fadeTop = fadeTo;
+      drawTail();
+    }
     if (t - lastSample > 33 || flexing || dirty) { if (sample()) dirty = false; lastSample = t; }
     X.fillStyle = bg; X.fillRect(0, 0, W, H);
     X.fillStyle = ink;
@@ -210,7 +236,7 @@
     const breath = reduce ? 1 : 1 + 0.004 * Math.sin(t / 1700);
     const cx = W / 2, cy = H * 0.62;
     const R = 90, R2 = R * R;
-    const uiTop = H * 0.55, fadeSpan = H - uiTop;
+    const uiTop = H * fadeTop, fadeSpan = H - uiTop;
     const live = [];
     for (const rp of ripples) { const age = t - rp.t; if (age < rp.life) { rp.age = age; rp.rad = age * 0.4; rp.k = rp.amp * (1 - age / rp.life); live.push(rp); } }
     ripples = live;
@@ -220,7 +246,7 @@
         let d = lum[r * cols + c];
         if (d < 0.14) continue;
         let x = (c + 0.5) * cell, y = (r + 0.5) * cell;
-        x = cx + (x - cx) * breath + px; y = cy + (y - cy) * breath + py;
+        x = cx + (x - cx) * breath + px + panX; y = cy + (y - cy) * breath + py;
         const ddx = x - mouse.x, ddy = y - mouse.y, dist2 = ddx * ddx + ddy * ddy;
         if (!reduce && dist2 < R2) { const dist = Math.sqrt(dist2) || 1, f = (R - dist) / R; x += ddx / dist * f * 10; y += ddy / dist * f * 10; }
         let m = 1;
@@ -264,6 +290,36 @@
   const STOP = new Set('what are you your do does the a an is i me my of to and can could would tell on in for it that with be have has was were am some any please u ur'.split(' '));
   let QA = null, byId = Object.create(null), asked = false, active = -1, list = [], typing = 0, idleTimer = 0;
 
+  // ---------- speech bubble on wide screens ----------
+  const $talk = document.getElementById('talk'), $tail = document.getElementById('tail'), $tailPath = $tail.querySelector('path'), $form = document.getElementById('ask');
+  const wide = matchMedia('(min-width: 900px) and (min-aspect-ratio: 5/4) and (min-height: 420px)');
+  function drawTail() {
+    if (!$talk.classList.contains('on')) return;
+    const b = $say.getBoundingClientRect();
+    if (!b.height) return;
+    const tx = mouth.x + panX + 10, ty = mouth.y;
+    const half = Math.min(b.height / 3, Math.max(10, Math.min(24, (b.left - tx) * 0.08))), by = Math.max(b.top + half + 12, Math.min(b.bottom - half - 12, ty)), bx = b.left + 1;
+    const mx = (bx + tx) / 2;
+    $tailPath.setAttribute('d', `M${bx} ${by - half}Q${mx} ${(by - half + ty) / 2} ${tx} ${ty}Q${mx} ${(by + half + ty) / 2 + 3} ${bx} ${by + half}`);
+  }
+  function layoutTalk() {
+    const on = wide.matches && asked && !!$say.textContent;
+    $talk.classList.toggle('on', on); $tail.classList.toggle('show', on);
+    if (!on) { $talk.removeAttribute('style'); panTo = 0; fadeTo = 0.55; dirty = true; return; }
+    const M = 24, gap = 30, width = Math.max(300, Math.min(460, W * 0.34));
+    // Slide the portrait only as far as the bubble needs, and keep the whole face on screen.
+    panTo = Math.min(0, Math.max(M - faceLeft, W - M - width - gap - faceRight));
+    const left = faceRight + panTo + gap, room = Math.min(width, W - M - left);
+    const limit = $form.getBoundingClientRect().top - 14;
+    $talk.style.left = left + 'px'; $talk.style.width = room + 'px'; $talk.style.maxHeight = (limit - 16) + 'px';
+    const h = $talk.offsetHeight;
+    $talk.style.top = Math.max(16, Math.min(limit - h, mouth.y - h / 2)) + 'px';
+    fadeTo = 0.86; dirty = true;
+    drawTail();
+  }
+  addEventListener('resize', layoutTalk);
+  if (window.ResizeObserver) { const ro = new ResizeObserver(layoutTalk); ro.observe($say); ro.observe($chips); }
+
   const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9+ ]/g, ' ').split(/\s+/).filter(w => w && !STOP.has(w));
 
   function match(text) {
@@ -304,6 +360,7 @@
     const node = document.createTextNode(''), caret = document.createElement('span'), rest = document.createElement('span');
     caret.className = 'caret'; rest.style.visibility = 'hidden'; rest.textContent = text;
     shown.append(node, caret, rest); $say.append(shown);
+    layoutTalk();
     speaking = true; let i = 0, lastRip = 0;
     const finish = () => {
       clearTimeout(typing); $say.onclick = null;
@@ -316,7 +373,7 @@
       const edge = caret.offsetTop + caret.offsetHeight + 8;
       if (edge > $say.scrollTop + $say.clientHeight) $say.scrollTop = edge - $say.clientHeight;
       const now = performance.now();
-      if (now - lastRip > 400) { ripple(mouth.x, mouth.y, 0.12, 800); lastRip = now; }
+      if (now - lastRip > 400) { ripple(mouth.x + panX, mouth.y, 0.12, 800); lastRip = now; }
       if (i < text.length) typing = setTimeout(step, /[.,;:!?]/.test(text[i - 1]) ? 70 : 12);
       else finish();
     };
@@ -374,7 +431,7 @@
   }
 
   // hints cycle only until the first question, while the field is empty and unfocused
-  const HINTS = ['Ask Thanh anything', 'Ask what I am working on', 'Ask what I can build', 'Ask about the piano tools', 'Say hello', 'Ask if I am real', 'Type /help for commands'];
+  const HINTS = ['Ask Thanh, or type /help', 'Ask what I am working on', 'Ask what I can build', 'Ask about the piano tools', 'Say hello', 'Ask if I am real'];
   let hi = 0;
   setInterval(() => { if (asked || reduce || $q.value || document.activeElement === $q) return; $hint.classList.add('hide'); setTimeout(() => { hi = (hi + 1) % HINTS.length; $hint.textContent = HINTS[hi]; $hint.classList.remove('hide'); }, 500); }, 4200);
 
@@ -388,7 +445,7 @@
     if (v[0] === '/') { showSuggest(cmdItems(v), 99); return; }
     const m = match(v);
     showSuggest(m.length ? m : starters());
-    if (v.length % 3 === 0) ripple(mouth.x, mouth.y, 0.25, 600);
+    if (v.length % 3 === 0) ripple(mouth.x + panX, mouth.y, 0.25, 600);
   });
   $q.addEventListener('keydown', e => {
     if (e.key === 'ArrowDown' && list.length) { e.preventDefault(); setActive((active + 1) % list.length); }

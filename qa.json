@@ -31,7 +31,7 @@
   },
   "items": [
     {"id": "hello", "q": "Hello", "k": ["hello", "hi", "hey", "yo", "greetings", "morning", "evening", "sup"],
-     "a": "Hi. I'm Thanh, or Albert if that's easier. Ask me anything, or pick a question below.",
+     "a": "Hi. I'm Thanh, or Albert if that's easier. Ask me anything, pick a question below, or type /help for all the commands.",
      "next": ["who", "now", "made"]},
     {"id": "who", "q": "Who are you?", "k": ["who", "introduce", "yourself", "bio", "person"],
      "a": "Thanh Nguyen. Software engineer, systems by day, small tools at night. I like understanding things from the ground up and then making something that runs.",
