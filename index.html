@@ -124,9 +124,25 @@
       #tail path { fill: var(--solid); stroke: var(--line); stroke-width: 1; stroke-linejoin: round; }
     }
 
+    /* Phones and narrow windows: either the portrait or the text, never both on top of each other. */
+    canvas { transition: opacity .3s; }
+    body[data-m="chat"] canvas { opacity: 0; }
+    body:not([data-m=""]) #ui { transition: width .25s, opacity .25s, visibility .25s; }
+    body[data-m="idle"] #ui { width: min(270px, 80vw); }
+    body[data-m="idle"] #talk { display: none; }
+    body[data-m="clip"] #ui, body[data-m="peek"] #ui { opacity: 0; visibility: hidden; }
+    #peek {
+      position: fixed; z-index: 3; right: 12px; top: calc(env(safe-area-inset-top, 0px) + 12px);
+      min-height: 44px; padding: 0 16px; border-radius: 999px; cursor: pointer;
+      font: inherit; font-size: 0.95rem; color: var(--ink);
+      background: var(--solid); border: 1px solid var(--edge); box-shadow: var(--shadow);
+    }
+    #peek[hidden] { display: none; }
+    #peek:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
     noscript img { display: block; max-width: 100%; margin: 0 auto; }
     noscript p { text-align: center; }
-    @media (prefers-reduced-motion: reduce) { .chip { animation: none; opacity: 1; } #say .caret { animation: none; } #say, #you, #hint, #tail { transition: none; } }
+    @media (prefers-reduced-motion: reduce) { .chip { animation: none; opacity: 1; } #say .caret { animation: none; } canvas, #say, #you, #hint, #tail, body:not([data-m=""]) #ui { transition: none; } }
   </style>
 </head>
 <body>
@@ -136,6 +152,7 @@
   </video>
   <canvas id="stage" role="img" aria-label="Thanh Nguyen, drawn live as ink dots from a short video"></canvas>
 
+  <button id="peek" type="button" hidden></button>
   <div id="ui">
     <div id="talk">
       <div id="you"></div>
@@ -172,7 +189,7 @@
   let panX = 0, panTo = 0, fadeTop = 0.55, fadeTo = 0.55;
   const mouse = { x: -1e4, y: -1e4, tx: -1e4, ty: -1e4, inside: false };
   let ripples = [];
-  let speaking = false, flexing = false, primed = false;
+  let speaking = false, flexing = false, primed = false, bgOff = false, showClip = false, flexDone = null, flexGuard = 0;
 
   function theme() {
     const s = getComputedStyle(document.documentElement);
@@ -220,6 +237,7 @@
   let lastSample = 0, dirty = true;
   function frame(t) {
     requestAnimationFrame(frame);
+    if (bgOff && !flexing) return; // the portrait is hidden, so don't draw it
     if (reduce && !flexing && !dirty) return;
     if (panX !== panTo || fadeTop !== fadeTo) {
       panX += (panTo - panX) * 0.09; fadeTop += (fadeTo - fadeTop) * 0.09;
@@ -266,8 +284,17 @@
     const p = V.play(); if (p && p.catch) p.catch(() => { primed = false; });
   }
   V.addEventListener('timeupdate', () => { if (!flexing && !V.paused) { V.pause(); V.currentTime = 0; } });
-  V.addEventListener('ended', () => { flexing = false; V.currentTime = 0; });
-  function flex() { flexing = true; V.currentTime = 0; const p = V.play(); if (p && p.catch) p.catch(() => { flexing = false; }); }
+  V.addEventListener('ended', () => endFlex());
+  // done runs once when the clip ends, is skipped, fails to play or stalls.
+  function endFlex() {
+    clearTimeout(flexGuard); flexing = false; V.pause(); V.currentTime = 0;
+    const d = flexDone; flexDone = null; if (d) d();
+  }
+  function flex(done) {
+    flexing = true; flexDone = done || null; V.currentTime = 0;
+    clearTimeout(flexGuard); flexGuard = setTimeout(endFlex, 9000);
+    const p = V.play(); if (p && p.catch) p.catch(endFlex);
+  }
 
   addEventListener('resize', () => { resize(); dirty = true; });
   V.addEventListener('loadeddata', () => { dirty = true; });
@@ -276,7 +303,7 @@
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { theme(); dirty = true; });
   C.addEventListener('pointermove', e => { mouse.tx = e.clientX; mouse.ty = e.clientY; mouse.inside = true; });
   C.addEventListener('pointerleave', () => { mouse.inside = false; mouse.tx = -1e4; mouse.ty = -1e4; });
-  C.addEventListener('pointerdown', e => { ripple(e.clientX, e.clientY, 0.6, 1200); prime(); if (!asked) ask(byId.hello, ''); });
+  C.addEventListener('pointerdown', e => { ripple(e.clientX, e.clientY, 0.6, 1200); prime(); if (showClip) return endFlex(); if (!asked && wide.matches) ask(byId.hello, ''); });
   addEventListener('pointerdown', prime, { once: true });
   addEventListener('keydown', prime, { once: true });
 
@@ -293,6 +320,21 @@
   // ---------- speech bubble on wide screens ----------
   const $talk = document.getElementById('talk'), $tail = document.getElementById('tail'), $tailPath = $tail.querySelector('path'), $form = document.getElementById('ask');
   const wide = matchMedia('(min-width: 900px) and (min-aspect-ratio: 5/4) and (min-height: 420px)');
+  const $peek = document.getElementById('peek');
+  let peek = false, modeKey = null;
+  // Narrow screens have one mode at a time: idle (portrait and small box), chat (text only),
+  // clip (portrait only, while it plays) and peek (portrait only, until Show text is pressed).
+  function applyMode() {
+    const m = wide.matches ? '' : showClip ? 'clip' : (peek && asked) ? 'peek' : (asked || document.activeElement === $q) ? 'chat' : 'idle';
+    const key = m + asked;
+    if (key === modeKey) return;
+    modeKey = key;
+    document.body.dataset.m = m;
+    bgOff = m === 'chat'; dirty = true;
+    $peek.hidden = !(asked && (m === 'chat' || m === 'peek'));
+    $peek.textContent = m === 'peek' ? 'Show text' : 'Hide text';
+  }
+  $peek.addEventListener('click', () => { peek = !peek; $q.blur(); applyMode(); });
   function drawTail() {
     if (!$talk.classList.contains('on')) return;
     const b = $say.getBoundingClientRect();
@@ -303,9 +345,10 @@
     $tailPath.setAttribute('d', `M${bx} ${by - half}Q${mx} ${(by - half + ty) / 2} ${tx} ${ty}Q${mx} ${(by + half + ty) / 2 + 3} ${bx} ${by + half}`);
   }
   function layoutTalk() {
+    applyMode();
     const on = wide.matches && asked && !!$say.textContent;
     $talk.classList.toggle('on', on); $tail.classList.toggle('show', on);
-    if (!on) { $talk.removeAttribute('style'); panTo = 0; fadeTo = 0.55; dirty = true; return; }
+    if (!on) { $talk.removeAttribute('style'); panTo = 0; fadeTo = wide.matches ? 0.55 : 0.86; dirty = true; return; }
     const M = 24, gap = 30, width = Math.max(300, Math.min(460, W * 0.34));
     // Slide the portrait only as far as the bubble needs, and keep the whole face on screen.
     panTo = Math.min(0, Math.max(M - faceLeft, W - M - width - gap - faceRight));
@@ -390,7 +433,7 @@
     $q.value = ''; showSuggest([]); location.href = c.u;
   }
   function clearChat() {
-    clearTimeout(typing); $say.onclick = null; speaking = false; asked = false;
+    clearTimeout(typing); $say.onclick = null; speaking = false; asked = false; peek = false;
     $say.textContent = ''; $say.classList.remove('show'); $you.textContent = ''; $you.classList.remove('show');
     document.getElementById('sr').textContent = '';
     $q.value = ''; showSuggest([]); $chips.classList.remove('wait'); chips([], QA.starters);
@@ -403,10 +446,16 @@
     $you.textContent = userText || it.q; $you.classList.add('show');
     $q.value = ''; $hint.classList.remove('hide'); showSuggest([]); $chips.innerHTML = '';
     if (innerWidth < 700) $q.blur();
-    if (it.flex) flex();
     history.replaceState(null, '', '#' + it.id);
     chips(it.links, it.next); $chips.classList.add('wait');
-    say(it.a, () => $chips.classList.remove('wait'));
+    peek = false;
+    const speak = () => say(it.a, () => $chips.classList.remove('wait'));
+    if (!it.flex) return speak();
+    if (wide.matches) { flex(); return speak(); }
+    // Narrow screens: clear everything for the clip, then answer.
+    clearTimeout(typing); $say.onclick = null; speaking = false;
+    showClip = true; $q.blur(); applyMode();
+    flex(() => { showClip = false; speak(); });
   }
   function askText(text) {
     if (text[0] === '/') {
@@ -423,7 +472,7 @@
     reply(text, QA.fallback, QA.detail.links, QA.starters);
   }
   function reply(text, answer, links, next) {
-    asked = true; clearTimeout(idleTimer); $hint.textContent = HINTS[0]; $you.textContent = text; $you.classList.add('show'); $q.value = ''; showSuggest([]); $chips.innerHTML = '';
+    asked = true; peek = false; clearTimeout(idleTimer); $hint.textContent = HINTS[0]; $you.textContent = text; $you.classList.add('show'); $q.value = ''; showSuggest([]); $chips.innerHTML = '';
     chips(links, next); $chips.classList.add('wait');
     if (innerWidth < 700) $q.blur();
     history.replaceState(null, '', location.pathname + location.search);
@@ -433,8 +482,11 @@
   // hints cycle only until the first question, while the field is empty and unfocused
   const HINTS = ['Ask Thanh, or type /help', 'Ask what I am working on', 'Ask what I can build', 'Ask about the piano tools', 'Say hello', 'Ask if I am real'];
   let hi = 0;
-  setInterval(() => { if (asked || reduce || $q.value || document.activeElement === $q) return; $hint.classList.add('hide'); setTimeout(() => { hi = (hi + 1) % HINTS.length; $hint.textContent = HINTS[hi]; $hint.classList.remove('hide'); }, 500); }, 4200);
+  setInterval(() => { if (asked || reduce || $q.value || document.activeElement === $q) return; $hint.classList.add('hide'); setTimeout(() => { if (asked || document.activeElement === $q) return; hi = (hi + 1) % HINTS.length; $hint.textContent = HINTS[hi]; $hint.classList.remove('hide'); }, 500); }, 4200);
 
+  $q.addEventListener('focus', applyMode);
+  $q.addEventListener('blur', applyMode);
+  applyMode(); layoutTalk();
   $q.addEventListener('focus', () => { if (!QA) return; $hint.classList.add('hide'); if (!asked) { clearTimeout(idleTimer); $chips.innerHTML = ''; } if (!$q.value) showSuggest(starters()); });
   $q.addEventListener('blur', () => { setTimeout(() => { if (document.activeElement !== $q) { showSuggest([]); if (!$q.value) { $hint.classList.remove('hide'); if (!asked && QA) chips([], QA.starters); } } }, 150); });
   $q.addEventListener('input', () => {
