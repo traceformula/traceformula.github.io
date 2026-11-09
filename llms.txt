@@ -14,6 +14,7 @@ The same content as prose: about.md
 - [JPython](jpython): Python interpreter in JavaScript, runs in the browser.
 - [LaTeX Visualizer](latex): render LaTeX live, export PDF.
 - [SRS](srs): small spaced-repetition system.
+- [Memory Training](memory/): memory-sport trainer. Dominic number system, journeys with photos, timed image drills, Speed Numbers, binary and Speed Cards with WMSC/IAM scoring. Data stays in the browser.
 
 ## Visualizations and simulations
 - [Knowledge Map](knowledge/): force-directed graph of ~2,000 topics from books and courses. Data at knowledge/data.json

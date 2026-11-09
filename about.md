@@ -50,4 +50,5 @@ I want to keep exploring distributed systems, AI and math. In my free time I lov
 - Conway's Game of Life (interactive, with famous patterns, other rule sets and custom brushes): gameoflife
 - LaTeX Visualizer (tool): latex
 - SRS (tool): srs
+- Memory Training (memory-sport trainer: number system, journeys, Speed Numbers and Speed Cards): memory/
 - Mai Hoa Dịch Số (curiosity): maihoa
